@@ -1,0 +1,161 @@
+*, *:before, *:after {
+   box-sizing: inherit; }
+
+html {
+   font-size: 14px;
+   box-sizing: border-box; }
+
+body, button, input, select, textarea {
+   font-family: Lato, sans-serif;
+   font-size: inherit;
+   line-height: 1.4375; }
+
+body {
+   margin: 20px; }
+
+H1 {
+   font-size: 22px; }
+
+a {
+   color: #07C;
+   text-decoration: none; }
+a:hover {
+   text-decoration: underline; }
+.pseudoButton,
+.miniPseudoButton {
+   color: #07C;
+   cursor: pointer; }
+.miniPseudoButton {
+   font-size: 12px; }
+
+div.footer {
+   margin-top: 8px;
+   font-size: 12px; }
+
+code,
+.code {
+   font-family: Consolas, monospace; }
+code {
+   background-color: #eff0f1; }
+
+input[type="text"], input[type="number"] {
+   padding: 1px 2px; }
+
+input[type="number"]::-webkit-inner-spin-button {
+   -webkit-appearance: none; }
+input[type="number"] {
+   -moz-appearance: textfield; }
+input[type="text"]:invalid:not(:focus), input[type="number"]:invalid:not(:focus) {
+   box-shadow: 0 0 1px 1px #f00; }
+
+.hidden {
+   display: none !important; }
+
+.parmBlock {
+   margin-bottom: 10px; }
+
+.parmLine {
+   display: flex;
+   align-items: baseline;
+   margin-top: 8px; }
+
+div.parmLine input[type="checkbox"] {
+   margin-left: 0; }
+
+#harmonicCheckboxes div {
+   display: flex; }
+
+label.harmonic {
+   font-size: 13px;
+   margin-left: 2px;
+   align-self: center;
+   width: 26px; }
+input.harmonic {
+   margin: 0;
+   align-self: center; }
+/* div.parmLine input.harmonic-gap {
+   margin-left: 8px; } */
+
+#enableAllHarmonicsButton {
+   margin-left: 4px; }
+#disableAllHarmonicsButton {
+   margin-left: 7px; }
+
+.width1 {
+   width: 110px; }
+label.gap1 {
+   margin-left: 20px; }
+.width3 {
+   width: 350px; }
+
+.fileNameField {
+   width: 300px; }
+
+.fileLoadButton {
+   width: 50px;
+   padding-left: 10px; }
+
+label[title] {
+   text-decoration: underline dotted #aaa;
+   text-underline-position: under; }
+
+div.actionButtons {
+   display: flex;
+   align-items: center;
+   margin-top: 15px; }
+
+div.actionButtons button {
+   width: 95px;
+   padding: 4px 0px;
+   margin-right: 15px; }
+
+.resultBlock {
+   margin-top: 20px; }
+
+.resultBlock .title {
+   font-size: 13px; }
+
+#signalViewer,
+#frequencyViewer,
+#amplitudesViewer,
+#amplitudesOverFrequencyViewer {
+   display: block;
+   width: 800px;
+   margin-top: 8px;
+   border: 1px solid #888;
+   outline: none; }
+#signalViewer,
+#frequencyViewer,
+#amplitudesViewer {
+   height: 200px; }
+#amplitudesOverFrequencyViewer {
+   height: 300px; }
+
+div.miniButtonsBelow {
+   margin-top: 5px;
+   display: flex; }
+
+div.miniButtonsBelow div {
+   margin-right: 10px; }
+
+#signalViewerHelpText {
+   background-color: #FEFAE2;
+   border: 1px solid #F3EED5;
+   padding: 3px;
+   margin-top: 15px;
+   margin-bottom: 20px;
+   width: 450px; }
+
+table.functionCurveViewerHelp {
+   border-collapse: collapse;
+   width: 100%; }
+
+table.functionCurveViewerHelp td {
+   padding: 3px;
+   vertical-align: top;
+   border-bottom: 1px solid #eee; }
+table.functionCurveViewerHelp tr:last-child td {
+   border-bottom: none; }
+
+.functionCurveViewerHelpCol1 {
+   width: 230px; }

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+ <link rel="stylesheet" href="app.css">
+ <script src="app.js"></script>
+ <title>HarmSyn - Harmonic Synthesizer</title>
+</head>
+<body>
+
+<h1>HarmSyn - Harmonic Synthesizer</h1>
+
+<div class="parmBlock" id="inputParms">
+ <div class="parmLine">
+  <label class="width1" for="inputFileName">Input file:</label>
+  <input class="fileNameField" id="inputFileName" type="text" readonly>
+  <div class="fileLoadButton pseudoButton" id="loadInputFileButton">load</div>
+  <label class="width1 gap1" for="interpolationMethod">Interpolation:</label>
+  <select class="width1" id="interpolationMethod">
+   <option value="akima">Akima</option>
+   <option value="cubic">Cubic</option>
+   <option value="linear">Linear</option>
+   <option value="nearestNeighbor">Nearest neighbor</option>
+  </select>
+  <label class="width1 gap1" for="sampleRate">Sample rate [Hz]:</label>
+  <input class="width1" id="sampleRate" type="number" step="any" value="44100" required>
+ </div>
+ <div class="parmLine">
+  <label class="width1" for="f0Multiplier" title="Multiplicative factor for the fundamental frequency.">F0 multiplier:</label>
+  <input class="width1" id="f0Multiplier" type="number" step="any" value="1" required>
+ </div>
+ <div class="parmLine">
+  <label class="width1" title="The checkboxes can be used to filter individual harmonics.">Harmonics:</label>
+  <div id="harmonicCheckboxes"></div>
+  <div id="enableAllHarmonicsButton" class="pseudoButton">all</div>
+  <div id="disableAllHarmonicsButton" class="pseudoButton">none</div>
+ </div>
+</div>
+
+<div class="actionButtons">
+ <button id="synthesizeButton">Synthesize</button>
+ <button id="playButton">Play</button>
+ <button id="wavFileButton">WAV file</button>
+</div>
+
+<div class="resultBlock">
+ <div class="title">Signal</div>
+ <canvas id="signalViewer" tabindex="-1"></canvas>
+</div>
+<div class="resultBlock">
+ <div class="title">Frequency</div>
+ <canvas id="frequencyViewer" tabindex="-1"></canvas>
+</div>
+<div class="resultBlock">
+ <div class="title">Amplitudes over frequency</div>
+ <canvas id="amplitudesOverFrequencyViewer" tabindex="-1"></canvas>
+</div>
+<div class="resultBlock">
+ <div class="title">Amplitudes over time</div>
+ <canvas id="amplitudesViewer" tabindex="-1"></canvas>
+</div>
+
+</body>
+</html>
