@@ -50,13 +50,23 @@ function postProcessHelp (s0: string) : string {
 
 export function init() {
    const cmd = new Commander.Command();
-   cmd.description(
+   const usage = "<inputFileName> <outputFileName>";
+   const argsDescr = {
+      inputFileName:
+         "Name of the input file.\n" +
+         "This can be a WAV audio file (*.wav) which will be analyzed, or a text file (*.txt) with HarmSyn intermediate data.",
+      outputFileName:
+         "Name of the output file.\n" +
+         "This can be a WAV audio file (*.wav) into which the synthesized sound is written or a text file (*.txt) into which HarmSyn intermediate data is written." };
+   const progDescr =
+      "HarmSyn - Harmonic Synthesizer\n" +
       "An analysis and synthesis algorithm for quasi-periodic signals, e.g. vowels.\n" +
-      "The input and output files can be WAV audio files (file extension \".wav\") or\ntext files (file extension \".txt\").\n" +
       "Online demo: http://www.source-code.biz/harmSyn\n" +
-      "Source code: https://github.com/chdh/harm-syn");
+      "Source code: https://github.com/chdh/harm-syn";
+   cmd.name("node harmsyn.js");
+   cmd.description(progDescr, argsDescr);
    // Positional parameters:
-   cmd.arguments("<inputFileName> <outputFileName>").action(
+   cmd.arguments(usage).action(
       (arg1: string, arg2: string, _command, extraArgs?: string[]) => {
          inputFileName = arg1;
          outputFileName = arg2;
