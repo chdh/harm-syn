@@ -10,7 +10,7 @@ export function loadTextFileData (file: File) : Promise<string> {
       fileReader.addEventListener("error", () => reject(fileReader.error));
       fileReader.readAsText(file); }}
 
-export function openFileOpenDialog (callback: (file: File) => void) {
+export function openFileOpenDialog (callback: (file: File) => unknown) {
    const element: HTMLInputElement = document.createElement("input");
    element.type = "file";
    element.addEventListener("change", () => {
@@ -30,7 +30,7 @@ export function openSaveAsDialog (blob: Blob, fileName: string) {
    setTimeout(() => URL.revokeObjectURL(url), 60000);
    (<any>document).dummySaveAsElementHolder = element; }   // to prevent garbage collection
 
-export async function catchError (f: Function, ...args: any[]) {
+async function catchError2 (f: Function, args: any[]) {
    try {
       const r = f(...args);
       if (r instanceof Promise) {
@@ -38,6 +38,8 @@ export async function catchError (f: Function, ...args: any[]) {
     catch (error) {
       console.log(error);
       alert("Error: " + error); }}
+export function catchError (f: Function, ...args: any[]) {
+   void catchError2(f, args); }
 
 export function createAudioBufferFromSamples (samples: Float64Array, sampleRate: number, audioContext: AudioContext) : AudioBuffer {
    const buffer = audioContext.createBuffer(1, samples.length, sampleRate);

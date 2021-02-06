@@ -121,15 +121,11 @@ div.actionButtons button {
 #amplitudesOverFrequencyViewer {
    display: block;
    width: 800px;
+   height: 200px;
    margin-top: 8px;
    border: 1px solid #888;
-   outline: none; }
-#signalViewer,
-#frequencyViewer,
-#amplitudesViewer {
-   height: 200px; }
-#amplitudesOverFrequencyViewer {
-   height: 300px; }
+   outline: none;
+   touch-action: none; }
 
 div.miniButtonsBelow {
    margin-top: 5px;

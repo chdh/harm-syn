@@ -36,7 +36,7 @@ export default class InternalAudioPlayer {
       this.disposeActiveAudioSource(); }
 
    private audioEndedEventHandler = () => {
-      this.disposeActiveAudioSource(); }
+      this.disposeActiveAudioSource(); };
 
    private disposeActiveAudioSource() {
       if (!this.activeAudioSourceNode) {

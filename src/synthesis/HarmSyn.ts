@@ -1,7 +1,7 @@
 // Harmonic synthesizer.
 
-import {HarmSynDefRecord} from "../intData/HarmSynDef";
-import * as CommonsMathInterpolation from "commons-math-interpolation";
+import {HarmSynRecord} from "../intData/HarmSynDef";
+import {createInterpolator, InterpolationMethod} from "commons-math-interpolation";
 import * as DspUtils from "dsp-collection/utils/DspUtils";
 
 const PI2 = Math.PI * 2;
@@ -17,7 +17,7 @@ export interface HarmSynBase {
 
 // @param harmonicMod
 //    Harmonic modulation values in dB. -Infinity to suppress a harmonic. The values are added to the harmonic amplitudes (in dB).
-export function prepare (harmSynDef: HarmSynDefRecord[], interpolationMethod: string, f0Multiplier: number, harmonicMod: number[]) : HarmSynBase {
+export function prepare (harmSynDef: HarmSynRecord[], interpolationMethod: string, f0Multiplier: number, harmonicMod: number[]) : HarmSynBase {
    const base = <HarmSynBase>{};
    const n = harmSynDef.length;
    if (!n) {
@@ -42,11 +42,11 @@ export function prepare (harmSynDef: HarmSynDefRecord[], interpolationMethod: st
             amplitudeVals[harmonic - 1][i] = amplitude; }}}
    base.f0Min = Math.min(...f0Vals);
    base.f0Max = Math.max(...f0Vals);
-   base.f0Function = createConstrainedInterpolator(timeVals, f0Vals, interpolationMethod);
+   base.f0Function = createConstrainedInterpolator(interpolationMethod, timeVals, f0Vals);
    base.amplitudeFunctions = Array(base.harmonics);
    for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
       if (isFinite(harmonicMod[harmonic - 1])) {
-         base.amplitudeFunctions[harmonic - 1] = createConstrainedInterpolator(timeVals, amplitudeVals[harmonic - 1], interpolationMethod); }}
+         base.amplitudeFunctions[harmonic - 1] = createConstrainedInterpolator(interpolationMethod, timeVals, amplitudeVals[harmonic - 1], -Infinity); }}
    return base; }
 
 function findMaxEnabledHarmonic (harmonicMod: number[]) : number {
@@ -56,11 +56,25 @@ function findMaxEnabledHarmonic (harmonicMod: number[]) : number {
          maxEnabledHarmonic = i + 1; }}
    return maxEnabledHarmonic; }
 
-function createConstrainedInterpolator (xvals: Float64Array, yvals: Float64Array, interpolationMethod: string) : (time: number) => number {
+function createConstrainedInterpolator (interpolationMethod: string, xvals: Float64Array, yvals: Float64Array, outsideValue?: number) : (x: number) => number {
+   const f = createInterpolatorWithFallbackForUndef(<any>interpolationMethod, xvals, yvals);
    const xMin = xvals[0];
    const xMax = xvals[xvals.length - 1];
-   const f = CommonsMathInterpolation.createInterpolator(<any>interpolationMethod, xvals, yvals);
-   return (x: number) => f(Math.max(xMin, Math.min(xMax, x))); }
+   if (outsideValue === undefined) {
+      return (x: number) => f(Math.max(xMin, Math.min(xMax, x))); }
+    else {
+      return (x: number) => (x >= xMin && x <= xMax) ? f(x) : outsideValue; }}
+
+function createInterpolatorWithFallbackForUndef (interpolationMethod: InterpolationMethod, xvals: Float64Array, yvals: Float64Array) : (x: number) => number {
+   const f = createInterpolator(interpolationMethod, xvals, yvals);
+   switch (interpolationMethod) {
+      case "akima": case "cubic": {
+         const f2 = createInterpolator("linear", xvals, yvals);
+         return (x: number) => {
+            const y = f(x);
+            return isFinite(y) ? y : f2(x); }; }
+      default: {
+         return f; }}}
 
 export function synthesize (base: HarmSynBase, sampleRate: number) : Float64Array {
    const sampleCount = Math.round(base.duration * sampleRate);

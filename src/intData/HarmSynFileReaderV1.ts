@@ -1,14 +1,15 @@
 // Harmonic synthesizer file parser.
+// Version for old file format.
 
-import {HarmSynDefRecord, maxHarmonics} from "./HarmSynDef";
+import {HarmSynRecord, maxHarmonics} from "./HarmSynDef";
 import * as Utils from "../Utils";
 
-function parseHarmSynFileLine (s: string) : HarmSynDefRecord | undefined {
+function parseHarmSynFileLine (s: string) : HarmSynRecord | undefined {
    let p = 0;
    skipBlanks();
    if (p >= s.length || s[p] == ";" || s[p] == "*") {
       return; }
-   const r = <HarmSynDefRecord>{};
+   const r = <HarmSynRecord>{};
    r.time = parseNumber();
    skipBlanks();
    r.f0 = parseNumber();
@@ -59,11 +60,11 @@ function decodeNumber (s: string) : number {
       return NaN; }
    return Number(s); }
 
-export function parseHarmSynFile (fileData: string) : HarmSynDefRecord[] {
-   const harmSynDef: HarmSynDefRecord[] = Array();
+export function parseHarmSynFile (fileData: string) : HarmSynRecord[] {
+   const harmSynDef: HarmSynRecord[] = [];
    const fileLines = Utils.splitTextFileIntoLines(fileData);
    for (let lineNo = 1; lineNo <= fileLines.length; lineNo++) {
-      let r: HarmSynDefRecord | undefined;
+      let r: HarmSynRecord | undefined;
       try {
          r = parseHarmSynFileLine(fileLines[lineNo - 1]); }
        catch (e) {

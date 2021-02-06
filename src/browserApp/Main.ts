@@ -1,5 +1,5 @@
-import {HarmSynDefRecord} from "../intData/HarmSynDef";
-import * as HarmSynFileReader from "../intData/HarmSynFileReader";
+import {HarmSynRecord} from "../intData/HarmSynDef";
+import * as HarmSynFileReader from "../intData/HarmSynFileReaderV1";
 import * as HarmSyn from "../synthesis/HarmSyn";
 import {HarmSynBase} from "../synthesis/HarmSyn";
 import * as Utils from "../Utils";
@@ -24,7 +24,7 @@ var amplitudesViewerWidget:            FunctionCurveViewer.Widget | undefined;
 var amplitudesOverFrequencyViewerWidget: FunctionCurveViewer.Widget | undefined;
 
 // Current input file data:
-var harmSynDef:                        HarmSynDefRecord[] | undefined;
+var harmSynDef:                        HarmSynRecord[] | undefined;
 var harmonicCount:                     number;                       // number of harmonics oocuring in harmSynDef
 var inputFileName:                     string;
 
@@ -123,7 +123,7 @@ function setAmplitudesOverFrequencyViewer (base: HarmSynBase) {
    const viewerState : FunctionCurveViewer.ViewerState = {
       xMin:            0,
       xMax:            Math.min(5500, base.f0Max * base.harmonics * 1.1),
-      yMin:            -80,
+      yMin:            -60,
       yMax:            0,
       xAxisUnit:       "Hz",
       yAxisUnit:       "dB",
@@ -211,7 +211,7 @@ async function loadInitialInputFile() {
    try {
       const parmsString = window.location.hash.substring(1);
       const usp = new URLSearchParams(parmsString);
-      const inputFileUrl = usp.get("file") || defaultInputFileUrl;
+      const inputFileUrl = usp.get("file") ?? defaultInputFileUrl;
       await loadInputFileFromUrl(inputFileUrl); }
     catch (e) {
       if (window.location.protocol == "file:") {           // ignore error when running from local file system
@@ -278,4 +278,4 @@ async function startup() {
     catch (e) {
       alert("Error: " + e); }}
 
-document.addEventListener("DOMContentLoaded", startup);
+document.addEventListener("DOMContentLoaded", <any>startup);

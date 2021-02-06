@@ -6,5 +6,5 @@ node_modules
 notes.txt
 package-lock.json
 tempBuild
-test.bat
+test*.bat
 todo.txt

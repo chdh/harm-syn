@@ -7,17 +7,21 @@ import * as Commander from "commander";
 // Analysis parameters:
 export var inputFileName:              string;
 export var startFrequency:             number | undefined; // [Hz]
-export var trackingInterval:           number;             // [ms]
+export var startFrequencyMin:          number;             // [Hz]
+export var startFrequencyMax:          number;             // [Hz]
+export var trackingStartPos:           number | undefined; // [s]
+export var trackingStartLevel:         number;             // [dB]
+export var trackingInterval:           number;             // [s]
 export var maxFrequencyDerivative:     number;             // [/s]
 export var minTrackingAmplitude:       number;             // [dB]
 export var harmonics:                  number;
 export var fCutoff:                    number;             // [Hz]
 export var shiftFactor:                number;
-export var relWindowWidth1:            number;
-export var windowFunctionId1:          string;
+export var trackingRelWindowWidth:     number;
+export var trackingWindowFunctionId:   string;
 export var interpolationInterval:      number;
-export var relWindowWidth2:            number;
-export var windowFunctionId2:          string;
+export var ampRelWindowWidth:          number;
+export var ampWindowFunctionId:        string;
 
 // Synthesis parameters:
 export var outputFileName:             string;
@@ -48,6 +52,11 @@ function postProcessHelp (s0: string) : string {
    s = s.replace("  -d,", "\nGeneral options:\n\n  -d,");
    return s; }
 
+function displayHelp (cmd: Commander.Command) {
+   const s = cmd.helpInformation();
+   const s2 = postProcessHelp(s);
+   process.stdout.write(s2); }
+
 export function init() {
    const cmd = new Commander.Command();
    const usage = "<inputFileName> <outputFileName>";
@@ -67,24 +76,27 @@ export function init() {
    cmd.description(progDescr, argsDescr);
    // Positional parameters:
    cmd.arguments(usage).action(
-      (arg1: string, arg2: string, _command, extraArgs?: string[]) => {
+      (arg1: string, arg2: string) => {
          inputFileName = arg1;
-         outputFileName = arg2;
-         if (extraArgs) {
-            throw new SimpleError("Extra parameters on command line: " + extraArgs.join(" ")); }});
+         outputFileName = arg2; });
+   cmd.allowExcessArguments(false);
    // Analysis options:
    cmd.option("--startFrequency <n>", "Start value for the fundamental frequency F0 [Hz]. If not specified, pitch detection is used.", decodeNumber);
+   cmd.option("--startFrequencyMin <n>", "Minimal value for automatic startFrequency [Hz].", decodeNumber, 75);
+   cmd.option("--startFrequencyMax <n>", "Maximum value for automatic startFrequency [Hz].", decodeNumber, 900);
+   cmd.option("--trackingStartPos <n>", "Start position for frequency tracking [s]. Automatically determined if not specified. Tracking proceeds from this position in both directions.", decodeNumber);
+   cmd.option("--trackingStartLevel <n>", "Minimal signal level for automatically finding the start position for frequency tracking [dB]. Only used when trackingStartPos is not specified.", decodeNumber, -22);
    cmd.option("--trackingInterval <n>", "Tracking interval [ms]. Step size for the tracking algorithm.", decodeNumber, 1);
    cmd.option("--maxFrequencyDerivative <n>", "Maximum relative frequency derivative per second.", decodeNumber, 4);
    cmd.option("--minTrackingAmplitude <n>", "Minimum tracking amplitude [dB]. Harmonics with a lower amplitude are ignored.", decodeNumber, -55);
    cmd.option("--harmonics <n>", "Number of harmonic frequencies to track.", decodeInt, 10);
    cmd.option("--fCutoff <n>", "Upper frequency limit for the harmonics [Hz]", decodeNumber, 5500);
    cmd.option("--shiftFactor <n>", "Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.", decodeNumber, 0.25);
-   cmd.option("--relWindowWidth1 <n>", "Window width for tracking, relative to F0 wavelength.", decodeNumber, 12);
-   cmd.option("--windowFunction1 <s>", "Window function for computing the instantaneous frequencies during tracking.", "flatTop");
+   cmd.option("--trackingRelWindowWidth <n>", "Window width for frequency tracking, relative to F0 wavelength.", decodeNumber, 12);
+   cmd.option("--trackingWindowFunction <s>", "Window function for computing the instantaneous frequencies during tracking.", "flatTop");
    cmd.option("--interpolationInterval <n>", "Interpolation interval as a multiple of the tracking interval.", decodeInt, 5);
-   cmd.option("--relWindowWidth2 <n>", "Window width relative to F0 wavelength for computing the harmonic amplitudes.", decodeNumber, 12);
-   cmd.option("--windowFunction2 <s>", "Window function for computing the harmonic amplitudes.", "flatTop");
+   cmd.option("--ampRelWindowWidth <n>", "Window width relative to F0 wavelength for computing the harmonic amplitudes.", decodeNumber, 12);
+   cmd.option("--ampWindowFunction <s>", "Window function for computing the harmonic amplitudes.", "flatTop");
    // Synthesis options:
    cmd.option("--sampleRate <n>", "Output sample rate [Hz].", decodeNumber, 44100);
    cmd.option("--interpolationMethod <n>", "Interpolation method ID for synthesis.", "akima");
@@ -99,32 +111,39 @@ export function init() {
       "Attenuate 3th harmonic by 5dB: \"1* 3/-5\"");
    // General options:
    cmd.option("-d, --debugLevel <n>", "Debug level (0 to 9)", decodeNumber, 0);
-   cmd.helpOption("-h, --help", "Displays this help.");
+   cmd.option("-h, --help", "Displays this help.");
+   cmd.helpOption(false);
    //
-   if (process.argv.length <= 2) {
-      cmd.outputHelp(postProcessHelp);
+   const args = process.argv;
+   if (args.length <= 2 || args[2] == "-h" || args[2] == "--help") {
+      displayHelp(cmd);
       process.exit(1); }
-   cmd.parse(process.argv);
+   cmd.parse(args);
+   const opts = cmd.opts();
    // Analysis options:
-   startFrequency         = cmd.startFrequency;
-   trackingInterval       = cmd.trackingInterval;
-   maxFrequencyDerivative = cmd.maxFrequencyDerivative;
-   minTrackingAmplitude   = cmd.minTrackingAmplitude;
-   harmonics              = cmd.harmonics;
-   fCutoff                = cmd.fCutoff;
-   shiftFactor            = cmd.shiftFactor;
-   relWindowWidth1        = cmd.relWindowWidth1;
-   windowFunctionId1      = cmd.windowFunction1;
-   interpolationInterval  = cmd.interpolationInterval;
-   relWindowWidth2        = cmd.relWindowWidth2;
-   windowFunctionId2      = cmd.windowFunction2;
+   startFrequency            = opts.startFrequency;
+   startFrequencyMin         = opts.startFrequencyMin;
+   startFrequencyMax         = opts.startFrequencyMax;
+   trackingStartPos          = opts.trackingStartPos;
+   trackingStartLevel        = opts.trackingStartLevel;
+   trackingInterval          = opts.trackingInterval / 1000;
+   maxFrequencyDerivative    = opts.maxFrequencyDerivative;
+   minTrackingAmplitude      = opts.minTrackingAmplitude;
+   harmonics                 = opts.harmonics;
+   fCutoff                   = opts.fCutoff;
+   shiftFactor               = opts.shiftFactor;
+   trackingRelWindowWidth    = opts.trackingRelWindowWidth;
+   trackingWindowFunctionId  = opts.trackingWindowFunction;
+   interpolationInterval     = opts.interpolationInterval;
+   ampRelWindowWidth         = opts.ampRelWindowWidth;
+   ampWindowFunctionId       = opts.ampWindowFunction;
    // Synthesis options:
-   outputSampleRate       = cmd.sampleRate;
-   interpolationMethod    = cmd.interpolationMethod;
-   f0Multiplier           = cmd.f0Multiplier;
-   harmonicMod            = decodeHarmonicModString(cmd.harmonicMod);
+   outputSampleRate          = opts.sampleRate;
+   interpolationMethod       = opts.interpolationMethod;
+   f0Multiplier              = opts.f0Multiplier;
+   harmonicMod               = decodeHarmonicModString(opts.harmonicMod);
    // General options:
-   debugLevel             = cmd.debugLevel; }
+   debugLevel                = opts.debugLevel; }
 
 function decodeHarmonicModString (s: string) : number[] {
    const a = new Array(maxHarmonics);
