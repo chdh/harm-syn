@@ -16,7 +16,6 @@ import * as WavFileEncoder from "wav-file-encoder";
 import * as WavDecoder from "wav-decoder";
 
 const fallbackStartFrequency = 250;
-const minAmplitudeDb         = -55;
 
 var inputSignal:             Float64Array;
 var inputSampleRate:         number;
@@ -73,7 +72,7 @@ function writeOutputWavFile() {
    Fs.writeFileSync(CmdLine.outputFileName, Buffer.from(wavFileData)); }
 
 function writeOutputTextFile() {
-   const fileData = HarmSynFileWriter.createHarmSynFile(harmSynDef, minAmplitudeDb);
+   const fileData = HarmSynFileWriter.createHarmSynFile(harmSynDef, CmdLine.minRelevantAmplitude);
    Fs.writeFileSync(CmdLine.outputFileName, fileData); }
 
 function readInputFile() {

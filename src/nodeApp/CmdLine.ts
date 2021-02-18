@@ -14,6 +14,7 @@ export var trackingStartLevel:         number;             // [dB]
 export var trackingInterval:           number;             // [s]
 export var maxFrequencyDerivative:     number;             // [/s]
 export var minTrackingAmplitude:       number;             // [dB]
+export var minRelevantAmplitude:       number;             // [dB]
 export var harmonics:                  number;
 export var fCutoff:                    number;             // [Hz]
 export var shiftFactor:                number;
@@ -88,7 +89,8 @@ export function init() {
    cmd.option("--trackingStartLevel <n>", "Minimal signal level for automatically finding the start position for frequency tracking [dB]. Only used when trackingStartPos is not specified.", decodeNumber, -22);
    cmd.option("--trackingInterval <n>", "Tracking interval [ms]. Step size for the tracking algorithm.", decodeNumber, 1);
    cmd.option("--maxFrequencyDerivative <n>", "Maximum relative frequency derivative per second.", decodeNumber, 4);
-   cmd.option("--minTrackingAmplitude <n>", "Minimum tracking amplitude [dB]. Harmonics with a lower amplitude are ignored.", decodeNumber, -55);
+   cmd.option("--minTrackingAmplitude <n>", "Minimum tracking amplitude [dB]. Harmonics with a lower amplitude are ignored for frequency tracking.", decodeNumber, -55);
+   cmd.option("--minRelevantAmplitude <n>", "Minimum relevant amplitude [dB]. Lower amplitude values are omitted in the text output file.", decodeNumber, -55);
    cmd.option("--harmonics <n>", "Number of harmonic frequencies to track.", decodeInt, 10);
    cmd.option("--fCutoff <n>", "Upper frequency limit for the harmonics [Hz]", decodeNumber, 5500);
    cmd.option("--shiftFactor <n>", "Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.", decodeNumber, 0.25);
@@ -129,6 +131,7 @@ export function init() {
    trackingInterval          = opts.trackingInterval / 1000;
    maxFrequencyDerivative    = opts.maxFrequencyDerivative;
    minTrackingAmplitude      = opts.minTrackingAmplitude;
+   minRelevantAmplitude      = opts.minRelevantAmplitude;
    harmonics                 = opts.harmonics;
    fCutoff                   = opts.fCutoff;
    shiftFactor               = opts.shiftFactor;
