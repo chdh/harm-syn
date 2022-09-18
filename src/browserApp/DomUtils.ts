@@ -1,21 +1,41 @@
 // Browser DOM utilities.
 
+import {catchError} from "./UtilsB.js";
+
+const numberFormat = new Intl.NumberFormat("en-US");
+
+export function elementExists (elementId: string) : boolean {
+   return !!document.getElementById(elementId); }
+
+export function getElement (elementOrId: HTMLElement | string) : HTMLElement {
+   if (typeof elementOrId != "string") {
+      return elementOrId; }
+   const e = <HTMLElement>document.getElementById(elementOrId);
+   if (!e) {
+      throw new Error("No HTML element found with ID \"" + elementOrId + "\"."); }
+   return e; }
+
+export function getInputElement (elementOrId: HTMLInputElement | string) : HTMLInputElement {
+   return <HTMLInputElement>getElement(elementOrId); }
+export function getSelectElement (elementOrId: HTMLInputElement | string) : HTMLSelectElement {
+   return <HTMLSelectElement>getElement(elementOrId); }
+
 // Shows or hides a DOM element.
-// If the element is a form control with associated label elements, the label elements are also affected.
-export function showElement (elementId: string, visible = true) {
-   const element = document.getElementById(elementId);
-   if (!element) {
-      return; }
-   element.classList.toggle("hidden", !visible);
-   if ((<any>element).labels) {
-      for (const labelElement of (<any>element).labels) {
+// If the element is an input element with an associated label element, the label element is also affected.
+export function showElement (elementOrId: HTMLElement | string, visible = true) {
+   const e = getElement(elementOrId);
+   e.classList.toggle("hidden", !visible);
+   const labels = (<HTMLInputElement>e).labels;
+   if (labels) {
+      for (const labelElement of labels) {
          labelElement.classList.toggle("hidden", !visible); }}}
 
-export function getInputElement (elementId: string) : HTMLInputElement {
-   const e = <HTMLInputElement>document.getElementById(elementId);
-   if (!e) {
-      throw new Error("No HTML element found with ID \"" + elementId + "\"."); }
-   return e; }
+export function isElementVisible (elementOrId: HTMLElement | string) : boolean {
+   const e = getElement(elementOrId);
+   return !e.classList.contains("hidden"); }
+
+export function enableElement (elementOrId: HTMLInputElement | string, enabled = true) {
+   getInputElement(elementOrId).disabled = !enabled; }
 
 function getInputElementLabelText (e: HTMLInputElement) : string {
    let s = (e.labels && e.labels.length > 0) ? e.labels[0].textContent ?? "" : "";
@@ -23,42 +43,101 @@ function getInputElementLabelText (e: HTMLInputElement) : string {
       s = s.substring(0, s.length - 1); }
    return s; }
 
+function genValidityErrorMsg (elementOrId: HTMLInputElement | string) {
+   const e = getInputElement(elementOrId);
+   const labelText = getInputElementLabelText(e);
+   const info = labelText ? ` with label "${labelText}"` : e.id ? ` with ID "${e.id}"` : "";
+   return "Invalid value in input field" + info + "."; }
+
 function checkValidity (e: HTMLInputElement) {
    if (!e.checkValidity()) {
-      const labelText = getInputElementLabelText(e);
-      const info = labelText ? ` with label "${labelText}"` : e.id ? ` with ID "${e.id}"` : "";
-      throw new Error("Invalid value in input field" + info + "."); }}
+      throw new Error(genValidityErrorMsg(e)); }}
 
-export function getValue (elementId: string) : string {
-   const e = getInputElement(elementId);
+export function getValue (elementOrId: HTMLInputElement | string) : string {
+   const e = getInputElement(elementOrId);
    checkValidity(e);
    return e.value; }
 
-export function setValue (elementId: string, newValue: string) {
-   getInputElement(elementId).value = newValue; }
+export function setValue (elementOrId: HTMLInputElement | string, newValue: string) {
+   getInputElement(elementOrId).value = newValue; }
 
-export function getValueNum (elementId: string, defaultValue: number = NaN) : number {
-   const e = getInputElement(elementId);
+export function setText (elementOrId: HTMLElement | string, text: string) {
+   getElement(elementOrId).textContent = text; }
+
+export function setTitle (elementOrId: HTMLElement | string, title: string) {
+   getElement(elementOrId).title = title; }
+
+export function setFocus (elementOrId: HTMLElement | string) {
+   getElement(elementOrId).focus(); }
+
+export function getValueNumOpt (elementOrId: HTMLInputElement | string) : number | undefined {
+   const e = getInputElement(elementOrId);
    checkValidity(e);
    if (e.value == "") {
-      return defaultValue; }
-   return e.valueAsNumber; }
+      return undefined; }
+   if (e.type == "number") {
+      return e.valueAsNumber; }
+   const v = decodeNumber(e.value);
+   if (v == undefined) {
+      throw new Error(genValidityErrorMsg(e)); }
+   return v; }
 
-export function setValueNum (elementId: string, newValue: number) {
-   const e = getInputElement(elementId);
-   if (isNaN(newValue)) {
-      e.value = ""; }
-    else {
-      e.valueAsNumber = newValue; }}
+export function getValueNum (elementOrId: HTMLInputElement | string) : number {
+   const v = getValueNumOpt(elementOrId);
+   if (v == undefined) {
+      throw new Error(genValidityErrorMsg(elementOrId)); }
+   return v; }
 
-export function getChecked (elementId: string) : boolean {
-   return getInputElement(elementId).checked; }
-
-export function setChecked (elementId: string, newValue: boolean) {
-   getInputElement(elementId).checked = newValue; }
-
-export function setClass (elementId: string, className: string, enable = true) {
-   const e = document.getElementById(elementId);
-   if (!e) {
+export function setValueNum (elementOrId: HTMLInputElement | string, n: number | undefined) {
+   const e = getInputElement(elementOrId);
+   if (n == undefined || isNaN(n)) {
+      e.value = "";
       return; }
+   if (e.type == "number") {
+      e.valueAsNumber = n;
+      return; }
+   e.value = formatNumber(n); }
+
+export function addNumericFieldFormatSwitcher (elementOrId: HTMLInputElement | string) {
+   const e = getInputElement(elementOrId);
+   e.addEventListener("focusin", () => {
+      const n = decodeNumber(e.value);
+      if (n != undefined) {
+         e.value = String(n); }});
+   e.addEventListener("focusout", () => {
+      const n = decodeNumber(e.value);
+      if (n != undefined) {
+         e.value = formatNumber(n); }}); }
+
+export function getChecked (elementOrId: HTMLInputElement | string) : boolean {
+   return getInputElement(elementOrId).checked; }
+
+export function setChecked (elementOrId: HTMLInputElement | string, newValue: boolean) {
+   getInputElement(elementOrId).checked = newValue; }
+
+export function setClass (elementOrId: HTMLInputElement | string, className: string, enable = true) {
+   const e = getElement(elementOrId);
    e.classList.toggle(className, enable); }
+
+export function addEventListener (elementOrId: HTMLElement | string, eventType: string, listener: Function, ...args: any[]) {
+   const e = getElement(elementOrId);
+   e.addEventListener(eventType, (event: Event) => void catchError(listener, event, ...args)); }
+
+export function addChangeEventListener (elementOrId: HTMLElement | string, listener: Function, ...args: any[]) {
+   addEventListener(elementOrId, "change", listener, ...args); }
+
+export function addClickEventListener (elementOrId: HTMLElement | string, listener: Function, ...args: any[]) {
+   addEventListener(elementOrId, "click", listener, ...args); }
+
+export function formatNumber (n: number | undefined, includeSign: boolean = false) : string {
+   if (n === undefined || !isFinite(n)) {
+      return ""; }
+   const plusSign = (includeSign && n > 0) ? "+" : "";
+   return plusSign + numberFormat.format(n).replace(/,/g, "\u202F"); }
+
+// Returns undefined if the string does not contain a valid number.
+export function decodeNumber (s: string) : number | undefined {
+   if (!s) {
+      return undefined; }
+   const n = Number(s.replace(/[\u{2000}-\u{20FF}]/gu, ""));
+   return isFinite(n) ? n : undefined; }

@@ -11,8 +11,8 @@ const namingOptions = [
       leadingUnderscore: "allow" },
   {
       selector: "function",
-      filter: "^[a-z].*_",                                 // allow function names with "_"
-      format: null },
+      format: null,
+      custom: {regex: "^[a-z]\\w*$", match: true} },
   {
       selector: "typeLike",
       format: ["PascalCase"] }];
@@ -55,7 +55,7 @@ const rules = {
    "@typescript-eslint/no-throw-literal": "error",
    "@typescript-eslint/no-unused-expressions": "error",                              "no-unused-expressions": "off",
    "@typescript-eslint/no-unused-vars": ["error", {"argsIgnorePattern": "^_"}],      "no-unused-vars": "off",
-   "@typescript-eslint/no-use-before-define": ["error", {functions: false}],         "no-use-before-define": "off",
+   "@typescript-eslint/no-use-before-define": ["error", {functions: false, classes: false}], "no-use-before-define": "off",
    "@typescript-eslint/prefer-includes": "warn",
    "@typescript-eslint/prefer-nullish-coalescing": "warn",
    "@typescript-eslint/prefer-optional-chain": "warn",
@@ -66,10 +66,12 @@ const rules = {
    // Modifications of default rules:
    "@typescript-eslint/ban-types": ["error", {extendDefaults: true, types: {Function: false}}],
    "@typescript-eslint/explicit-module-boundary-types": "off",
+   "@typescript-eslint/no-empty-function": "off",
    "@typescript-eslint/no-explicit-any": "off",
    "@typescript-eslint/no-inferrable-types": "off",
    "@typescript-eslint/no-non-null-assertion": "off",
    "@typescript-eslint/no-unnecessary-type-assertion": "off", // off because it does not work correctly
+   "@typescript-eslint/no-unsafe-argument": "off",
    "@typescript-eslint/no-unsafe-assignment": "off",
    "@typescript-eslint/no-unsafe-call": "off",
    "@typescript-eslint/no-unsafe-member-access": "off",
@@ -98,5 +100,4 @@ module.exports = {
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended",
       "plugin:@typescript-eslint/recommended-requiring-type-checking" ],
-   ignorePatterns: ["/src/tempExtSource/*.js"],
    rules };

@@ -1,50 +1,25 @@
 // Commandline parameters
 
-import {SimpleError} from "../Utils";
-import {maxHarmonics} from "../intData/HarmSynDef";
+import {decodeNumber, decodeInt} from "../Utils.js";
+import * as Utils from "../Utils.js";
+import * as HarmAnal from "../analysis/HarmAnal.js";
+import {defaultAnalParms} from "../analysis/HarmAnal.js";
+import * as HarmSyn from "../synthesis/HarmSyn.js";
+import {defaultSynParms} from "../synthesis/HarmSyn.js";
 import * as Commander from "commander";
 
-// Analysis parameters:
+// Input file parameters:
 export var inputFileName:              string;
-export var startFrequency:             number | undefined; // [Hz]
-export var startFrequencyMin:          number;             // [Hz]
-export var startFrequencyMax:          number;             // [Hz]
-export var trackingStartPos:           number | undefined; // [s]
-export var trackingStartLevel:         number;             // [dB]
-export var trackingInterval:           number;             // [s]
-export var maxFrequencyDerivative:     number;             // [/s]
-export var minTrackingAmplitude:       number;             // [dB]
+
+// Output file parameters:
+export var outputFileName:             string;
 export var minRelevantAmplitude:       number;             // [dB]
-export var harmonics:                  number;
-export var fCutoff:                    number;             // [Hz]
-export var shiftFactor:                number;
-export var trackingRelWindowWidth:     number;
-export var trackingWindowFunctionId:   string;
-export var interpolationInterval:      number;
-export var ampRelWindowWidth:          number;
-export var ampWindowFunctionId:        string;
+
+// Analysis parameters:
+export var analParms:                  HarmAnal.AnalParms;
 
 // Synthesis parameters:
-export var outputFileName:             string;
-export var interpolationMethod:        string;
-export var outputSampleRate:           number;
-export var f0Multiplier:               number;
-export var harmonicMod:                number[];
-
-// General parameters:
-export var debugLevel:          number;
-
-function decodeNumber (s: string) : number {
-  const x = Number(s);
-  if (!isFinite(x) || !s) {
-     throw new SimpleError("Invalid numeric argument value \"" + s + "\"."); }
-  return x; }
-
-function decodeInt (s: string) : number {
-   const v = decodeNumber(s);
-   if (!Number.isInteger(v)) {
-     throw new SimpleError("Invalid integer argument value \"" + s + "\"."); }
-   return v; }
+export var synParms:                   HarmSyn.SynParms;
 
 function postProcessHelp (s0: string) : string {
    let s = s0;
@@ -81,28 +56,28 @@ export function init() {
          inputFileName = arg1;
          outputFileName = arg2; });
    cmd.allowExcessArguments(false);
+   // Output file options:
+   cmd.option("--minRelevantAmplitude <n>", "Minimum relevant amplitude [dB]. Lower amplitude values are omitted in the text output file.", decodeNumber, -70);
    // Analysis options:
    cmd.option("--startFrequency <n>", "Start value for the fundamental frequency F0 [Hz]. If not specified, pitch detection is used.", decodeNumber);
-   cmd.option("--startFrequencyMin <n>", "Minimal value for automatic startFrequency [Hz].", decodeNumber, 75);
-   cmd.option("--startFrequencyMax <n>", "Maximum value for automatic startFrequency [Hz].", decodeNumber, 900);
+   cmd.option("--startFrequencyMin <n>", "Minimal value for automatic startFrequency [Hz].", decodeNumber, defaultAnalParms.startFrequencyMin);
+   cmd.option("--startFrequencyMax <n>", "Maximum value for automatic startFrequency [Hz].", decodeNumber, defaultAnalParms.startFrequencyMax);
    cmd.option("--trackingStartPos <n>", "Start position for frequency tracking [s]. Automatically determined if not specified. Tracking proceeds from this position in both directions.", decodeNumber);
-   cmd.option("--trackingStartLevel <n>", "Minimal signal level for automatically finding the start position for frequency tracking [dB]. Only used when trackingStartPos is not specified.", decodeNumber, -22);
-   cmd.option("--trackingInterval <n>", "Tracking interval [ms]. Step size for the tracking algorithm.", decodeNumber, 1);
-   cmd.option("--maxFrequencyDerivative <n>", "Maximum relative frequency derivative per second.", decodeNumber, 4);
-   cmd.option("--minTrackingAmplitude <n>", "Minimum tracking amplitude [dB]. Harmonics with a lower amplitude are ignored for frequency tracking.", decodeNumber, -55);
-   cmd.option("--minRelevantAmplitude <n>", "Minimum relevant amplitude [dB]. Lower amplitude values are omitted in the text output file.", decodeNumber, -55);
-   cmd.option("--harmonics <n>", "Number of harmonic frequencies to track.", decodeInt, 10);
-   cmd.option("--fCutoff <n>", "Upper frequency limit for the harmonics [Hz]", decodeNumber, 5500);
-   cmd.option("--shiftFactor <n>", "Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.", decodeNumber, 0.25);
-   cmd.option("--trackingRelWindowWidth <n>", "Window width for frequency tracking, relative to F0 wavelength.", decodeNumber, 12);
-   cmd.option("--trackingWindowFunction <s>", "Window function for computing the instantaneous frequencies during tracking.", "flatTop");
-   cmd.option("--interpolationInterval <n>", "Interpolation interval as a multiple of the tracking interval.", decodeInt, 5);
-   cmd.option("--ampRelWindowWidth <n>", "Window width relative to F0 wavelength for computing the harmonic amplitudes.", decodeNumber, 12);
-   cmd.option("--ampWindowFunction <s>", "Window function for computing the harmonic amplitudes.", "flatTop");
+   cmd.option("--trackingStartLevel <n>", "Minimal signal level for automatically finding the start position for frequency tracking [dB]. Only used when trackingStartPos is not specified.", decodeNumber, defaultAnalParms.trackingStartLevel);
+   cmd.option("--trackingInterval <n>", "Tracking interval [ms]. Step size for the tracking algorithm.", decodeNumber, defaultAnalParms.trackingInterval * 1000);
+   cmd.option("--maxFrequencyDerivative <n>", "Maximum relative frequency derivative per second.", decodeNumber, defaultAnalParms.maxFrequencyDerivative);
+   cmd.option("--minTrackingAmplitude <n>", "Minimum tracking amplitude [dB]. Harmonics with a lower amplitude are ignored for frequency tracking.", decodeNumber, defaultAnalParms.minTrackingAmplitude);
+   cmd.option("--harmonics <n>", "Number of harmonic frequencies to track.", decodeInt, defaultAnalParms.harmonics);
+   cmd.option("--fCutoff <n>", "Upper frequency limit for the harmonics [Hz]", decodeNumber, defaultAnalParms.fCutoff);
+   cmd.option("--shiftFactor <n>", "Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.", decodeNumber, defaultAnalParms.shiftFactor);
+   cmd.option("--trackingRelWindowWidth <n>", "Window width for frequency tracking, relative to F0 wavelength.", decodeNumber, defaultAnalParms.trackingRelWindowWidth);
+   cmd.option("--trackingWindowFunction <s>", "Window function for computing the instantaneous frequencies during tracking.", defaultAnalParms.trackingWindowFunctionId);
+   cmd.option("--interpolationInterval <n>", "Interpolation interval as a multiple of the tracking interval.", decodeInt, defaultAnalParms.interpolationInterval);
+   cmd.option("--ampRelWindowWidth <n>", "Window width relative to F0 wavelength for computing the harmonic amplitudes.", decodeNumber, defaultAnalParms.ampRelWindowWidth);
+   cmd.option("--ampWindowFunction <s>", "Window function for computing the harmonic amplitudes.", defaultAnalParms.ampWindowFunctionId);
    // Synthesis options:
-   cmd.option("--sampleRate <n>", "Output sample rate [Hz].", decodeNumber, 44100);
-   cmd.option("--interpolationMethod <n>", "Interpolation method ID for synthesis.", "akima");
-   cmd.option("--f0Multiplier <n>", "F0 multiplier. A multiplicative factor for the fundamental frequency.", decodeNumber, 1);
+   cmd.option("--interpolationMethod <n>", "Interpolation method ID for synthesis.", defaultSynParms.interpolationMethod);
+   cmd.option("--f0Multiplier <n>", "F0 multiplier. A multiplicative factor for the fundamental frequency.", decodeNumber, defaultSynParms.f0Multiplier);
    cmd.option("--harmonicMod <s>",
       "Enable/disable or amplify/attenuate individual harmonics.\n" +
       "A '*' can be used to include all multiple harmonics.\n" +
@@ -111,6 +86,7 @@ export function init() {
       "Enable 2nd and 4th harmonic: \"2 4\"\n" +
       "Enable all even harmonics: \"2*\"\n" +
       "Attenuate 3th harmonic by 5dB: \"1* 3/-5\"");
+   cmd.option("--sampleRate <n>", "Output sample rate [Hz].", decodeNumber, defaultSynParms.outputSampleRate);
    // General options:
    cmd.option("-d, --debugLevel <n>", "Debug level (0 to 9)", decodeNumber, 0);
    cmd.option("-h, --help", "Displays this help.");
@@ -122,77 +98,29 @@ export function init() {
       process.exit(1); }
    cmd.parse(args);
    const opts = cmd.opts();
+   // Output file options:
+   minRelevantAmplitude                = opts.minRelevantAmplitude;
    // Analysis options:
-   startFrequency            = opts.startFrequency;
-   startFrequencyMin         = opts.startFrequencyMin;
-   startFrequencyMax         = opts.startFrequencyMax;
-   trackingStartPos          = opts.trackingStartPos;
-   trackingStartLevel        = opts.trackingStartLevel;
-   trackingInterval          = opts.trackingInterval / 1000;
-   maxFrequencyDerivative    = opts.maxFrequencyDerivative;
-   minTrackingAmplitude      = opts.minTrackingAmplitude;
-   minRelevantAmplitude      = opts.minRelevantAmplitude;
-   harmonics                 = opts.harmonics;
-   fCutoff                   = opts.fCutoff;
-   shiftFactor               = opts.shiftFactor;
-   trackingRelWindowWidth    = opts.trackingRelWindowWidth;
-   trackingWindowFunctionId  = opts.trackingWindowFunction;
-   interpolationInterval     = opts.interpolationInterval;
-   ampRelWindowWidth         = opts.ampRelWindowWidth;
-   ampWindowFunctionId       = opts.ampWindowFunction;
+   analParms.startFrequency            = opts.startFrequency;
+   analParms.startFrequencyMin         = opts.startFrequencyMin;
+   analParms.startFrequencyMax         = opts.startFrequencyMax;
+   analParms.trackingStartPos          = opts.trackingStartPos;
+   analParms.trackingStartLevel        = opts.trackingStartLevel;
+   analParms.trackingInterval          = opts.trackingInterval / 1000;
+   analParms.maxFrequencyDerivative    = opts.maxFrequencyDerivative;
+   analParms.minTrackingAmplitude      = opts.minTrackingAmplitude;
+   analParms.harmonics                 = opts.harmonics;
+   analParms.fCutoff                   = opts.fCutoff;
+   analParms.shiftFactor               = opts.shiftFactor;
+   analParms.trackingRelWindowWidth    = opts.trackingRelWindowWidth;
+   analParms.trackingWindowFunctionId  = opts.trackingWindowFunction;
+   analParms.interpolationInterval     = opts.interpolationInterval;
+   analParms.ampRelWindowWidth         = opts.ampRelWindowWidth;
+   analParms.ampWindowFunctionId       = opts.ampWindowFunction;
    // Synthesis options:
-   outputSampleRate          = opts.sampleRate;
-   interpolationMethod       = opts.interpolationMethod;
-   f0Multiplier              = opts.f0Multiplier;
-   harmonicMod               = decodeHarmonicModString(opts.harmonicMod);
+   synParms.interpolationMethod        = opts.interpolationMethod;
+   synParms.f0Multiplier               = opts.f0Multiplier;
+   synParms.harmonicMod                = HarmSyn.decodeHarmonicModString(opts.harmonicMod);
+   synParms.outputSampleRate           = opts.sampleRate;
    // General options:
-   debugLevel                = opts.debugLevel; }
-
-function decodeHarmonicModString (s: string) : number[] {
-   const a = new Array(maxHarmonics);
-   if (!s) {
-      a.fill(0);
-      return a; }
-   a.fill(-Infinity);
-   let p = 0;
-   while (true) {
-      skipBlanks();
-      if (p >= s.length) {
-         break; }
-      const harmonic = scanNumber();
-      if (!Number.isInteger(harmonic) || harmonic < 1 || harmonic > maxHarmonics) {
-         throw new SimpleError("Invalid harmonic number " + harmonic + "."); }
-      skipBlanks();
-      let multi = false;
-      if (s[p] == "*") {
-         p++;
-         multi = true; }
-      skipBlanks();
-      let amplitude = 0;
-      if (s[p] == "/") {
-         p++;
-         skipBlanks();
-         amplitude = scanNumber(); }
-      if (multi) {
-         for (let i = harmonic; i <= maxHarmonics; i += harmonic) {
-            a[i - 1] = amplitude; }}
-       else {
-         a[harmonic - 1] = amplitude; }
-      skipBlanks();
-      if (s[p] == ",") {
-         p++; }}
-   return a;
-   function skipBlanks() {
-      while (p < s.length && s[p] == " ") {
-         p++; }}
-   //
-   function scanNumber() : number {
-      const p0 = p;
-      if (s[p] == "+" || s[p] == "-") {
-         p++; }
-      while (p < s.length) {
-         const c = s[p];
-         if (!(c >= "0" && c <= "9" || c == ".")) {
-            break; }
-         p++; }
-      return decodeNumber(s.substring(p0, p)); }}
+   Utils.setDebugLevel(opts.debugLevel); }

@@ -1,100 +1,79 @@
-// Harmonic synthesizer.
+// Harmonic synthesis main logic.
 
-import {HarmSynRecord} from "../intData/HarmSynDef";
-import {createInterpolator, InterpolationMethod} from "commons-math-interpolation";
-import * as DspUtils from "dsp-collection/utils/DspUtils";
+import {maxHarmonics, HarmSynDef} from "../intData/HarmSynIntData.js";
+import {decodeNumber, SimpleError} from "../Utils.js";
+import * as HarmSynSub from "./HarmSynSub.js";
 
-const PI2 = Math.PI * 2;
+export interface SynParms {                                // synthesizer parameters
+   interpolationMethod:      string;                       // Interpolation method ID for synthesis
+   f0Multiplier:             number;                       // F0 multiplier. A multiplicative factor for the fundamental frequency.
+   harmonicMod:              ArrayLike<number>;            // dB values to amplify/attenuate harmonics
+   outputSampleRate:         number; }                     // Output sample rate [Hz]
 
-// Intermediate base data for the harmonic synthesizer.
-export interface HarmSynBase {
-   duration:                 number;                       // duration of the signal in seconds
-   harmonics:                number;                       // number of harmonics
-   f0Min:                    number;                       // minimum F0 value
-   f0Max:                    number;                       // maximum F0 value
-   f0Function:               (t: number) => number;        // interpolation function for the fundamental frequency
-   amplitudeFunctions:       ((t: number) => number)[]; }  // interpolation functions for the harmonic amplitudes (in dB)
+export const defaultSynParms: SynParms = {                 // default values for synthesizer parameters
+   interpolationMethod:      "akima",
+   f0Multiplier:             1,
+   harmonicMod:              new Array(maxHarmonics).fill(0),
+   outputSampleRate:         44100 };
 
-// @param harmonicMod
-//    Harmonic modulation values in dB. -Infinity to suppress a harmonic. The values are added to the harmonic amplitudes (in dB).
-export function prepare (harmSynDef: HarmSynRecord[], interpolationMethod: string, f0Multiplier: number, harmonicMod: number[]) : HarmSynBase {
-   const base = <HarmSynBase>{};
-   const n = harmSynDef.length;
-   if (!n) {
-      throw new Error("Empty harmonic synthesizer definition."); }
-   base.duration = harmSynDef[n - 1].time;                 // the last time stamp is used as the duration
-   const maxEnabledHarmonic = findMaxEnabledHarmonic(harmonicMod);
-   base.harmonics = Math.max(...harmSynDef.map(r => Math.min(maxEnabledHarmonic, r.amplitudes.length)));
-   const timeVals = new Float64Array(n);
-   const f0Vals = new Float64Array(n);
-   const amplitudeVals: Float64Array[] = new Array(base.harmonics);
-   for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
-      if (isFinite(harmonicMod[harmonic - 1])) {
-         amplitudeVals[harmonic - 1] = new Float64Array(n); }}
-   for (let i = 0; i < n; i++) {
-      const r = harmSynDef[i];
-      timeVals[i] = r.time;
-      f0Vals[i] = r.f0 * f0Multiplier;
-      for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
-         const mod = harmonicMod[harmonic - 1];
-         if (isFinite(mod)) {
-            const amplitude = (harmonic <= r.amplitudes.length) ? r.amplitudes[harmonic - 1] + mod : -Infinity;
-            amplitudeVals[harmonic - 1][i] = amplitude; }}}
-   base.f0Min = Math.min(...f0Vals);
-   base.f0Max = Math.max(...f0Vals);
-   base.f0Function = createConstrainedInterpolator(interpolationMethod, timeVals, f0Vals);
-   base.amplitudeFunctions = Array(base.harmonics);
-   for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
-      if (isFinite(harmonicMod[harmonic - 1])) {
-         base.amplitudeFunctions[harmonic - 1] = createConstrainedInterpolator(interpolationMethod, timeVals, amplitudeVals[harmonic - 1], -Infinity); }}
-   return base; }
-
-function findMaxEnabledHarmonic (harmonicMod: number[]) : number {
-   let maxEnabledHarmonic = 0;
-   for (let i = 0; i < harmonicMod.length; i++) {
-      if (isFinite(harmonicMod[i])) {
-         maxEnabledHarmonic = i + 1; }}
-   return maxEnabledHarmonic; }
-
-function createConstrainedInterpolator (interpolationMethod: string, xvals: Float64Array, yvals: Float64Array, outsideValue?: number) : (x: number) => number {
-   const f = createInterpolatorWithFallbackForUndef(<any>interpolationMethod, xvals, yvals);
-   const xMin = xvals[0];
-   const xMax = xvals[xvals.length - 1];
-   if (outsideValue === undefined) {
-      return (x: number) => f(Math.max(xMin, Math.min(xMax, x))); }
-    else {
-      return (x: number) => (x >= xMin && x <= xMax) ? f(x) : outsideValue; }}
-
-function createInterpolatorWithFallbackForUndef (interpolationMethod: InterpolationMethod, xvals: Float64Array, yvals: Float64Array) : (x: number) => number {
-   const f = createInterpolator(interpolationMethod, xvals, yvals);
-   switch (interpolationMethod) {
-      case "akima": case "cubic": {
-         const f2 = createInterpolator("linear", xvals, yvals);
-         return (x: number) => {
-            const y = f(x);
-            return isFinite(y) ? y : f2(x); }; }
-      default: {
-         return f; }}}
-
-export function synthesize (base: HarmSynBase, sampleRate: number) : Float64Array {
-   const sampleCount = Math.round(base.duration * sampleRate);
-   const samples = new Float64Array(sampleCount);
-   let w = 0;                                              // angle of fundamental wave
-   for (let position = 0; position < sampleCount; position++) {
-      const time = position / sampleRate;
-      const f0 = base.f0Function(time);
+// Decodes the harmonicMod string.
+// It is used to enable/disable or amplify/attenuate individual harmonics.
+// A '*' can be used to include all multiple harmonics.
+// A '/' can be used to add an amplification (positive) or attenuation (negative) factor in dB.
+// Examples:
+// - Enable 2nd and 4th harmonic: "2 4"
+// - Enable all even harmonics: "2*"
+// - Attenuate 3th harmonic by 5dB: "1* 3/-5"
+export function decodeHarmonicModString (s: string) : Float64Array {
+   const a = new Float64Array(maxHarmonics);
+   if (!s) {
+      return a; }
+   a.fill(-Infinity);
+   let p = 0;
+   while (true) {
+      skipBlanks();
+      if (p >= s.length) {
+         break; }
+      const harmonic = scanNumber();
+      if (!Number.isInteger(harmonic) || harmonic < 1 || harmonic > maxHarmonics) {
+         throw new SimpleError("Invalid harmonic number " + harmonic + "."); }
+      skipBlanks();
+      let multi = false;
+      if (s[p] == "*") {
+         p++;
+         multi = true; }
+      skipBlanks();
       let amplitude = 0;
-      for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
-         const amplitudeFunction = base.amplitudeFunctions[harmonic - 1];
-         if (!amplitudeFunction) {
-            continue; }
-         const harmonicAmplitudeDb = amplitudeFunction(time);
-         if (isFinite(harmonicAmplitudeDb)) {
-            const harmonicAmplitude = DspUtils.convertDbToAmplitude(harmonicAmplitudeDb);
-            amplitude += harmonicAmplitude * Math.sin(w * harmonic); }}
-      samples[position] = amplitude;
-      const deltaW = PI2 * f0 / sampleRate;
-      w += deltaW;
-      if (w >= PI2) {
-         w -= PI2; }}
-   return samples; }
+      if (s[p] == "/") {
+         p++;
+         skipBlanks();
+         amplitude = scanNumber(); }
+      if (multi) {
+         for (let i = harmonic; i <= maxHarmonics; i += harmonic) {
+            a[i - 1] = amplitude; }}
+       else {
+         a[harmonic - 1] = amplitude; }
+      skipBlanks();
+      if (s[p] == ",") {
+         p++; }}
+   return a;
+   //
+   function skipBlanks() {
+      while (p < s.length && s[p] == " ") {
+         p++; }}
+   //
+   function scanNumber() : number {
+      const p0 = p;
+      if (s[p] == "+" || s[p] == "-") {
+         p++; }
+      while (p < s.length) {
+         const c = s[p];
+         if (!(c >= "0" && c <= "9" || c == ".")) {
+            break; }
+         p++; }
+      return decodeNumber(s.substring(p0, p)); }}
+
+export function synthesize (harmSynDef: HarmSynDef, synParms: SynParms) : Float64Array {
+   const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.harmonicMod);
+   const outputSignal = HarmSynSub.synthesizeFromBase(harmSynBase, synParms.outputSampleRate);
+   return outputSignal; }

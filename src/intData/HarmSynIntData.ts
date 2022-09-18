@@ -2,6 +2,12 @@
 
 export const maxHarmonics = 100;
 
+// Contains the F0 and amplitude values for a specific point in time.
+export interface HarmSynRecord {
+   time:                     number;                       // time position [s]
+   f0:                       number;                       // fundamental frequency [Hz]
+   amplitudes:               Float64Array; }               // amplitudes of the harmonic frequency components [dB]
+
 export interface FunctionCurveDef {
    xVals:                    Float64Array;                 // x-values (time in seconds)
    yVals:                    Float64Array; }               // y-values (frequency or amplitude)
@@ -10,18 +16,12 @@ export interface HarmSynDef {
    f0Curve:                  FunctionCurveDef;             // fundamental frequency [Hz]
    amplitudeCurves:          FunctionCurveDef[]; }         // amplitudes of the harmonic frequency components [dB]
 
-// Contains the F0 and amplitude values for a specific point in time.
-export interface HarmSynRecord {
-   time:                     number;                       // time position [s]
-   f0:                       number;                       // fundamental frequency [Hz]
-   amplitudes:               Float64Array; }               // amplitudes of the harmonic frequency components [dB]
-
 export function convertRecordsToDef (recs: HarmSynRecord[]) : HarmSynDef {
    const def = <HarmSynDef>{};
    def.f0Curve = getF0Curve(recs);
    const harmonics = Math.max(...recs.map(r => r.amplitudes.length));
    const minAmpl = getMinAmplitude(recs);
-   const undefAmpl = Math.floor(minAmpl);
+   const undefAmpl = (isFinite(minAmpl) && minAmpl >= -100 && minAmpl <= -50) ? Math.floor(minAmpl) : -100;
    def.amplitudeCurves = Array(harmonics);
    for (let harmonic = 1; harmonic <= harmonics; harmonic++) {
       def.amplitudeCurves[harmonic - 1] = getAmplitudeCurve(recs, harmonic, undefAmpl); }

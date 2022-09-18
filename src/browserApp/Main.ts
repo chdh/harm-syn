@@ -1,67 +1,70 @@
-import {HarmSynRecord} from "../intData/HarmSynDef";
-import * as HarmSynFileReader from "../intData/HarmSynFileReaderV1";
-import * as HarmSyn from "../synthesis/HarmSyn";
-import {HarmSynBase} from "../synthesis/HarmSyn";
-import * as Utils from "../Utils";
-import * as UtilsB from "./UtilsB";
-import * as DomUtils from "./DomUtils";
-import InternalAudioPlayer from "./InternalAudioPlayer";
+import * as HarmSynIntData from "../intData/HarmSynIntData.js";
+import {HarmSynRecord, HarmSynDef} from "../intData/HarmSynIntData.js";
+import * as HarmSynFileReader from "../intData/HarmSynFileReaderV1.js";
+import * as HarmSynFileWriter from "../intData/HarmSynFileWriterV1";
+import * as HarmSynSub from "../synthesis/HarmSynSub.js";
+import {HarmSynBase} from "../synthesis/HarmSynSub.js";
+import * as HarmAnal from "../analysis/HarmAnal.js";
+import * as Utils from "../Utils.js";
+import * as UtilsB from "./UtilsB.js";
+import {catchError, waitForDisplayUpdate} from "./UtilsB.js";
+import * as DomUtils from "./DomUtils.js";
+import * as AudioUtils from "./AudioUtils.js";
+import InternalAudioPlayer from "./InternalAudioPlayer.js";
+import * as ParmProc from "./ParmProc.js";
 import * as FunctionCurveViewer from "function-curve-viewer";
 import * as WavFileEncoder from "wav-file-encoder";
+import * as DialogMgr from "dialog-manager";
 
-const defaultInputFileUrl = "testSound1.txt";
+const defaultTextFileUrl = "testSound1.txt";
 
-var audioContext:                      AudioContext;
 var audioPlayer:                       InternalAudioPlayer;
 
 // GUI components:
-var synthesizeButtonElement:           HTMLButtonElement;
-var playButtonElement:                 HTMLButtonElement;
-var wavFileButtonElement:              HTMLButtonElement;
-var signalViewerWidget:                FunctionCurveViewer.Widget | undefined;
-var frequencyViewerWidget:             FunctionCurveViewer.Widget | undefined;
-var amplitudesViewerWidget:            FunctionCurveViewer.Widget | undefined;
-var amplitudesOverFrequencyViewerWidget: FunctionCurveViewer.Widget | undefined;
+var inputSignalViewerWidget:           FunctionCurveViewer.Widget;
+var outputSignalViewerWidget:          FunctionCurveViewer.Widget;
+var frequencyViewerWidget:             FunctionCurveViewer.Widget;
+var amplitudesViewerWidget:            FunctionCurveViewer.Widget;
+var amplOverFrequencyViewerWidget:     FunctionCurveViewer.Widget;
 
-// Current input file data:
-var harmSynDef:                        HarmSynRecord[] | undefined;
-var harmonicCount:                     number;                       // number of harmonics oocuring in harmSynDef
-var inputFileName:                     string;
+// Input signal:
+var inputSignalValid:                  boolean = false;
+var inputSignalSamples:                Float32Array;
+var inputSignalSampleRate:             number;
+var inputSignalFileName:               string;
 
-// Current synthesized signal:
-var signalSamples:                     Float64Array | undefined;
-var signalSampleRate:                  number;
-var signalFileName:                    string;
+// Intermediate data:
+var harmSynDefValid:                   boolean = false;
+var harmSynRecs:                       HarmSynRecord[];
+var harmSynDef:                        HarmSynDef;
+var intermediateFileName:              string;
+
+// Output signal:
+var outputSignalValid:                 boolean = false;
+var outputSignalSamples:               Float64Array;
+var outputSignalSampleRate:            number;
+var outputSignalFileName:              string;
 
 //------------------------------------------------------------------------------
 
-function setSignalViewer() {
-   if (signalViewerWidget) {
-      signalViewerWidget.setConnected(false);
-      signalViewerWidget = undefined; }
-   const canvasElement = <HTMLCanvasElement>document.getElementById("signalViewer")!;
-   signalViewerWidget = new FunctionCurveViewer.Widget(canvasElement);
-   const viewerFunction = FunctionCurveViewer.createViewerFunctionForFloat64Array(signalSamples!, signalSampleRate);
-   const viewerState : FunctionCurveViewer.ViewerState = {
+function loadSignalViewer (widget: FunctionCurveViewer.Widget, signalSamples: ArrayLike<number>, sampleRate: number) {
+   const viewerFunction = FunctionCurveViewer.createViewerFunctionForFloat64Array(signalSamples, sampleRate);
+   const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
       viewerFunction:  viewerFunction,
       xMin:            0,
-      xMax:            signalSamples!.length / signalSampleRate,
+      xMax:            signalSamples.length / sampleRate,
       yMin:            -1.2,
       yMax:            1.2,
       gridEnabled:     true,
       primaryZoomMode: FunctionCurveViewer.ZoomMode.x,
       xAxisUnit:       "s",
       focusShield:     true };
-   signalViewerWidget.setViewerState(viewerState); }
+   widget.setViewerState(viewerState); }
 
-function setFrequencyViewer (harmSynBase: HarmSynBase) {
-   if (frequencyViewerWidget) {
-      frequencyViewerWidget.setConnected(false);
-      frequencyViewerWidget = undefined; }
-   const canvasElement = <HTMLCanvasElement>document.getElementById("frequencyViewer")!;
-   frequencyViewerWidget = new FunctionCurveViewer.Widget(canvasElement);
-   const viewerState : FunctionCurveViewer.ViewerState = {
-      viewerFunction:  harmSynBase.f0Function,
+function loadFrequencyViewer (harmSynBase: HarmSynBase) {
+   const viewerFunction = (t: number) => (t >= 0 && t < harmSynBase.duration) ? harmSynBase.f0Function(t) : undefined;
+   const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
+      viewerFunction:  viewerFunction,
       xMin:            0,
       xMax:            harmSynBase.duration,
       yMin:            harmSynBase.f0Min / 1.1,
@@ -72,23 +75,18 @@ function setFrequencyViewer (harmSynBase: HarmSynBase) {
       focusShield:     true };
    frequencyViewerWidget.setViewerState(viewerState); }
 
-function setAmplitudesViewer (harmSynBase: HarmSynBase) {
-   if (amplitudesViewerWidget) {
-      amplitudesViewerWidget.setConnected(false);
-      amplitudesViewerWidget = undefined; }
-   const canvasElement = <HTMLCanvasElement>document.getElementById("amplitudesViewer")!;
-   amplitudesViewerWidget = new FunctionCurveViewer.Widget(canvasElement);
+function loadAmplitudesViewer (harmSynBase: HarmSynBase) {
    const viewerFunction = (time: number, _sampleWidth: number, channel: number) => {
       const amplitudeFunction = harmSynBase.amplitudeFunctions[channel];
       if (!amplitudeFunction) {
          return NaN; }
       return amplitudeFunction(time); };
-   const viewerState : FunctionCurveViewer.ViewerState = {
+   const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
       viewerFunction:  viewerFunction,
       channels:        harmSynBase.harmonics,
       xMin:            0,
       xMax:            harmSynBase.duration,
-      yMin:            -60,
+      yMin:            -70,
       yMax:            0,
       gridEnabled:     true,
       primaryZoomMode: FunctionCurveViewer.ZoomMode.x,
@@ -97,22 +95,19 @@ function setAmplitudesViewer (harmSynBase: HarmSynBase) {
       focusShield:     true };
    amplitudesViewerWidget.setViewerState(viewerState); }
 
-function setAmplitudesOverFrequencyViewer (base: HarmSynBase) {
-   if (amplitudesOverFrequencyViewerWidget) {
-      amplitudesOverFrequencyViewerWidget.setConnected(false);
-      amplitudesOverFrequencyViewerWidget = undefined; }
-   const canvasElement = <HTMLCanvasElement>document.getElementById("amplitudesOverFrequencyViewer")!;
-   amplitudesOverFrequencyViewerWidget = new FunctionCurveViewer.Widget(canvasElement);
+function loadAmplOverFrequencyViewer (base: HarmSynBase) {
    const paintFunction = (pctx: FunctionCurveViewer.CustomPaintContext) => {
       const ctx = pctx.ctx;
       ctx.save();
       for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
+         const amplitudeFunction = base.amplitudeFunctions[harmonic - 1];
+         if (!amplitudeFunction) {
+            continue; }
          ctx.strokeStyle = pctx.curveColors[harmonic - 1] || "#666666";
          ctx.beginPath();
          for (let time = 0; time < base.duration; time += 0.001) {
             const frequency = base.f0Function(time) * harmonic;      // (possible speed-optimization: Compute F0 once for all harmonics)
-            const amplitudeFunction = base.amplitudeFunctions[harmonic - 1];
-            const amplitude = amplitudeFunction ? amplitudeFunction(time) : NaN;
+            const amplitude = amplitudeFunction(time);
             if (!isFinite(amplitude)) {
                ctx.stroke();
                ctx.beginPath();
@@ -120,162 +115,224 @@ function setAmplitudesOverFrequencyViewer (base: HarmSynBase) {
             ctx.lineTo(pctx.mapLogicalToCanvasXCoordinate(frequency), pctx.mapLogicalToCanvasYCoordinate(amplitude)); }
          ctx.stroke(); }
       ctx.restore(); };
-   const viewerState : FunctionCurveViewer.ViewerState = {
+   const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
       xMin:            0,
       xMax:            Math.min(5500, base.f0Max * base.harmonics * 1.1),
-      yMin:            -60,
+      yMin:            -70,
       yMax:            0,
       xAxisUnit:       "Hz",
       yAxisUnit:       "dB",
       customPaintFunction: paintFunction,
       focusShield:     true };
-   amplitudesOverFrequencyViewerWidget.setViewerState(viewerState); }
+   amplOverFrequencyViewerWidget.setViewerState(viewerState); }
+
+function analyze() {
+   const analParms = ParmProc.getUiAnalParms();
+   const recs = HarmAnal.analyzeInputFile(inputSignalSamples, inputSignalSampleRate, analParms);
+   setHarmSynRecs(recs, inputSignalFileName); }
 
 function synthesize() {
-   signalSamples = undefined;
-   const sampleRate = DomUtils.getValueNum("sampleRate");
-   const interpolationMethod = DomUtils.getValue("interpolationMethod");
-   const harmonicMod = getHarmonicMod();
-   const f0Multiplier = DomUtils.getValueNum("f0Multiplier");
-   const harmSynBase = HarmSyn.prepare(harmSynDef!, interpolationMethod, f0Multiplier, harmonicMod);
-   setFrequencyViewer(harmSynBase);
-   setAmplitudesViewer(harmSynBase);
-   setAmplitudesOverFrequencyViewer(harmSynBase);
-   signalSamples = HarmSyn.synthesize(harmSynBase, sampleRate);
-   signalSampleRate = sampleRate;
-   signalFileName = inputFileName;
-   setSignalViewer();
-   UtilsB.synchronizeViewers([signalViewerWidget!, frequencyViewerWidget!, amplitudesViewerWidget!]); }
+   outputSignalValid = false;
+   const synParms = ParmProc.getUiSynParms();
+   const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.harmonicMod);
+   loadFrequencyViewer(harmSynBase);
+   loadAmplitudesViewer(harmSynBase);
+   loadAmplOverFrequencyViewer(harmSynBase);
+   outputSignalSamples = HarmSynSub.synthesizeFromBase(harmSynBase, synParms.outputSampleRate);
+   outputSignalSampleRate = synParms.outputSampleRate;
+   outputSignalFileName = intermediateFileName;
+   outputSignalValid = true;
+   loadSignalViewer(outputSignalViewerWidget, outputSignalSamples, outputSignalSampleRate); }
 
-//--- Check boxes to enable/disable harmonics ----------------------------------
+//--- Audio file i/o -----------------------------------------------------------
 
-function getHarmonicMod() : number[] {
-   const a: number[] = Array(harmonicCount);
-   for (let harmonic = 1; harmonic <= harmonicCount; harmonic++) {
-      a[harmonic - 1] = DomUtils.getChecked("harmonic-" + harmonic) ? 0 : -Infinity; }
-   return a; }
-
-function setHarmonicCheckboxes (newState: boolean) {
-   const a = document.querySelectorAll("input.harmonic");
-   for (const e of a) {
-      (<HTMLInputElement>e).checked = newState; }}
-
-function renderHarmonicCheckboxes() {
-   const container = document.getElementById("harmonicCheckboxes")!;
-   let html = "<div>";
-   for (let harmonic = 1; harmonic <= harmonicCount; harmonic++) {
-      let extraClass = "";
-      if (harmonic > 1 && harmonic % 20 == 1) {
-         html += "</div><div>"; }
-       else if (harmonic > 1 && harmonic % 5 == 1) {
-         extraClass = " harmonic-gap"; }
-//    html += `<label class="harmonic${extraClass}" for="harmonic-${harmonic}">${harmonic}:</label><input class="harmonic" id="harmonic-${harmonic}" type="checkbox" checked>`; }
-      html += `<input class="harmonic${extraClass}" id="harmonic-${harmonic}" type="checkbox" checked><label class="harmonic" for="harmonic-${harmonic}">${harmonic}</label>`; }
-   html += "</div>";
-   container.innerHTML = html; }
-
-//--- Input file handling ------------------------------------------------------
-
-function processInputFileData (fileData: string, fileName: string) {
-   harmSynDef = HarmSynFileReader.parseHarmSynFile(fileData);
-   harmonicCount = Math.max(...harmSynDef.map(r => r.amplitudes.length));
-   inputFileName = fileName;
-   DomUtils.setValue("inputFileName", fileName);
-   renderHarmonicCheckboxes();
+async function loadAudioFileData (fileData: ArrayBuffer, fileName: string) {
+   const audioBuffer = await AudioUtils.decodeAudioFileData(fileData);
+   inputSignalSamples = audioBuffer.getChannelData(0);     // only the first channel is used
+   inputSignalSampleRate = audioBuffer.sampleRate;
+   inputSignalFileName = fileName;
+   inputSignalValid = true;
+   loadSignalViewer(inputSignalViewerWidget, inputSignalSamples, inputSignalSampleRate);
+   harmSynDefValid = false;
+   outputSignalValid = false;
    refreshButtons(); }
 
-async function loadLocalInputFile (file: File) {
-   try {
-      harmSynDef = undefined;
-      inputParms_change();
-      const fileData = await UtilsB.loadTextFileData(file);
-      processInputFileData(fileData, file.name); }
-    catch (e) {
-      alert("Error: " + e); }}
+async function loadLocalAudioFile (file: File) {
+   const fileData = await file.arrayBuffer();
+   await loadAudioFileData(fileData, file.name); }
 
-function loadInputFileButton_click() {
-   UtilsB.openFileOpenDialog(loadLocalInputFile); }
-
-async function loadTextFileByUrl (url: string) : Promise<string> {
-   const response = await fetch(url, {mode: "cors"});   // (server must send "Access-Control-Allow-Origin" header field or have same origin)
-   if (!response.ok) {
-      throw new Error("Request failed for " + url); }
-   return response.text(); }
-
-async function loadInputFileFromUrl (url: string) {
-   const fileData = await loadTextFileByUrl(url);
+async function loadAudioFileFromUrl (url: string) {
+   const fileData = await Utils.loadFileFromUrl(url);
    const fileName = url.substring(url.lastIndexOf("/") + 1);
-   processInputFileData(fileData, fileName); }
+   await loadAudioFileData(fileData, fileName); }
 
-async function loadInitialInputFile() {
-   try {
-      const parmsString = window.location.hash.substring(1);
-      const usp = new URLSearchParams(parmsString);
-      const inputFileUrl = usp.get("file") ?? defaultInputFileUrl;
-      await loadInputFileFromUrl(inputFileUrl); }
-    catch (e) {
-      if (window.location.protocol == "file:") {           // ignore error when running from local file system
-         console.log("Unable to load initial input file.", e);
-         return; }
-      throw e; }}
+function loadAudioFileButton_click() {
+   UtilsB.openFileOpenDialog((file: File) => catchError(loadLocalAudioFile, file)); }
+
+async function saveWavFileButton_click() {
+   audioPlayer.stop();
+   if (!outputSignalValid) {
+      await synthesizeButton_click(); }
+   const wavFileData = WavFileEncoder.encodeWavFile2([outputSignalSamples], outputSignalSampleRate, WavFileEncoder.WavFileType.float32);
+   const fileName = Utils.removeFileNameExtension(outputSignalFileName) + ".wav";
+   UtilsB.openSaveAsDialog(wavFileData, fileName, "audio/wav", "wav", "WAV audio file"); }
+
+//--- Text file i/o ------------------------------------------------------------
+
+function setHarmSynRecs (recs: HarmSynRecord[], fileName: string) {
+   harmSynRecs = recs;
+   harmSynDef = HarmSynIntData.convertRecordsToDef(recs);
+   harmSynDefValid = true;
+   // DomUtils.setValue("inputFileName", fileName);
+   intermediateFileName = fileName;
+   const harmonics = harmSynDef.amplitudeCurves.length;
+   ParmProc.renderHarmonicCheckboxes(harmonics); }
+
+function processTextFileData (fileData: string, fileName: string) {
+   const recs = HarmSynFileReader.parseHarmSynFile(fileData);
+   setHarmSynRecs(recs, fileName);
+   refreshButtons(); }
+
+async function loadLocalTextFile (file: File) {
+   harmSynDefValid = false;
+   synParms_change();
+   const fileData = await file.text();
+   processTextFileData(fileData, file.name); }
+
+async function loadTextFileFromUrl (url: string) {
+   const fileData = await Utils.loadTextFileFromUrl(url);
+   const fileName = url.substring(url.lastIndexOf("/") + 1);
+   processTextFileData(fileData, fileName); }
+
+function loadTextFileButton_click() {
+   UtilsB.openFileOpenDialog((file: File) => catchError(loadLocalTextFile, file)); }
+
+function saveTextFileButton_click() {
+   const minRelevantAmplitude = DomUtils.getValueNum("minRelevantAmplitude");
+   const fileData = HarmSynFileWriter.createHarmSynFile(harmSynRecs, minRelevantAmplitude);
+   const fileName = Utils.removeFileNameExtension(intermediateFileName) + ".txt";
+   UtilsB.openSaveAsDialog(fileData, fileName, "text/plain", "txt", "Text file"); }
 
 //------------------------------------------------------------------------------
 
 function refreshButtons() {
-   const inputFileDataAvailable = !!harmSynDef;
-   synthesizeButtonElement.disabled = !inputFileDataAvailable;
-   playButtonElement.disabled = !inputFileDataAvailable;
-   playButtonElement.textContent = audioPlayer.isPlaying() ? "Stop" : "Play";
-   wavFileButtonElement.disabled = !inputFileDataAvailable; }
+   const playButtonText = audioPlayer.isPlaying() ? "Stop" : "Play";
+   DomUtils.enableElement("playInputButton", inputSignalValid);
+   DomUtils.setText("playInputButton", playButtonText);
+   DomUtils.enableElement("analyzeButton", inputSignalValid);
+   DomUtils.enableElement("saveTextFileButton", harmSynDefValid);
+   DomUtils.enableElement("synthesizeButton", harmSynDefValid);
+   DomUtils.enableElement("playOutputButton", harmSynDefValid);
+   DomUtils.setText("playOutputButton", playButtonText);
+   DomUtils.enableElement("saveWavFileButton", harmSynDefValid); }
 
-function inputParms_change() {
+function synParms_change() {
    audioPlayer.stop();
-   signalSamples = undefined;
+   outputSignalValid = false;
    refreshButtons(); }
 
-function synthesizeButton_click() {
+async function showProgressInfo() {
+   DialogMgr.showProgressInfo({msgHtml: `<div class="progressInfoMsg">Processing...</div>`});
+   await waitForDisplayUpdate(); }
+
+async function analyzeButton_click() {
    audioPlayer.stop();
-   synthesize();
+   try {
+      await showProgressInfo();
+      analyze();
+      synthesize(); }
+    finally {
+      DialogMgr.closeProgressInfo(); }
    refreshButtons(); }
 
-async function playButton_click() {
+async function synthesizeButton_click() {
+   audioPlayer.stop();
+   try {
+      await showProgressInfo();
+      synthesize(); }
+    finally {
+      DialogMgr.closeProgressInfo(); }}
+
+async function playInputButton_click() {
    if (audioPlayer.isPlaying()) {
       audioPlayer.stop();
       return; }
-   if (!signalSamples) {
-      synthesize(); }
-   await audioPlayer.playSamples(signalSamples!, signalSampleRate); }
+   await audioPlayer.playSamples(inputSignalSamples, inputSignalSampleRate); }
 
-function wavFileButton_click() {
-   audioPlayer.stop();
-   if (!signalSamples) {
+async function playOutputButton_click() {
+   if (audioPlayer.isPlaying()) {
+      audioPlayer.stop();
+      return; }
+   if (!outputSignalValid) {
+      await synthesizeButton_click(); }
+   await audioPlayer.playSamples(outputSignalSamples, outputSignalSampleRate); }
+
+async function initWithAudioFile (audioFileUrl: string) {
+   try {
+      await showProgressInfo();
+      await loadAudioFileFromUrl(audioFileUrl);
+      analyze();
       synthesize(); }
-   const buffer = UtilsB.createAudioBufferFromSamples(signalSamples!, signalSampleRate, audioContext);
-   const wavFileData = WavFileEncoder.encodeWavFile(buffer, WavFileEncoder.WavFileType.float32);
-   const blob = new Blob([wavFileData], {type: "audio/wav"});
-   UtilsB.openSaveAsDialog(blob, Utils.removeFileNameExtension(signalFileName) + ".wav"); }
+    finally {
+      DialogMgr.closeProgressInfo(); }
+   refreshButtons(); }
+
+async function initWithTextFile (textFileUrl: string) {
+   try {
+      await showProgressInfo();
+      await loadTextFileFromUrl(textFileUrl);
+      synthesize(); }
+    finally {
+      DialogMgr.closeProgressInfo(); }
+   refreshButtons(); }
+
+async function initParms() {
+   const up = ParmProc.getUrlParms();
+   ParmProc.setUiAnalParms(up.analParms);
+   ParmProc.setUiSynParms(up.synParms);
+   if (up.audioFileUrl) {
+      await initWithAudioFile(up.audioFileUrl); }
+    else {
+      const defaultTextFileUrl2 = (window.location.protocol != "file:") ? defaultTextFileUrl : undefined;
+      const textFileUrl = up.textFileUrl ?? defaultTextFileUrl2;
+      if (textFileUrl) {
+         await initWithTextFile(textFileUrl); }}}
 
 async function startup2() {
-   audioContext = new ((<any>window).AudioContext || (<any>window).webkitAudioContext)();
-   audioPlayer = new InternalAudioPlayer(audioContext);
+   audioPlayer = new InternalAudioPlayer();
    audioPlayer.addEventListener("stateChange", refreshButtons);
-   document.getElementById("enableAllHarmonicsButton")!.addEventListener("click", () => {setHarmonicCheckboxes(true); inputParms_change(); });
-   document.getElementById("disableAllHarmonicsButton")!.addEventListener("click", () => {setHarmonicCheckboxes(false); inputParms_change(); });
-   document.getElementById("loadInputFileButton")!.addEventListener("click", loadInputFileButton_click);
-   document.getElementById("inputParms")!.addEventListener("change", inputParms_change);
-   synthesizeButtonElement = <HTMLButtonElement>document.getElementById("synthesizeButton")!;
-   synthesizeButtonElement.addEventListener("click", () => UtilsB.catchError(synthesizeButton_click));
-   playButtonElement = <HTMLButtonElement>document.getElementById("playButton")!;
-   playButtonElement.addEventListener("click", () => UtilsB.catchError(playButton_click));
-   wavFileButtonElement = <HTMLButtonElement>document.getElementById("wavFileButton")!;
-   wavFileButtonElement.addEventListener("click", () => UtilsB.catchError(wavFileButton_click));
-   refreshButtons();
-   await loadInitialInputFile(); }
+   const inputSignalViewerCanvasElement       = <HTMLCanvasElement>document.getElementById("inputSignalViewer")!;
+   const outputSignalViewerCanvasElement      = <HTMLCanvasElement>document.getElementById("outputSignalViewer")!;
+   const frequencyViewerCanvasElement         = <HTMLCanvasElement>document.getElementById("frequencyViewer")!;
+   const amplitudesViewerCanvasElement        = <HTMLCanvasElement>document.getElementById("amplitudesViewer")!;
+   const amplOverFrequencyViewerCanvasElement = <HTMLCanvasElement>document.getElementById("amplOverFrequencyViewer")!;
+   inputSignalViewerWidget       = new FunctionCurveViewer.Widget(inputSignalViewerCanvasElement);
+   outputSignalViewerWidget      = new FunctionCurveViewer.Widget(outputSignalViewerCanvasElement);
+   frequencyViewerWidget         = new FunctionCurveViewer.Widget(frequencyViewerCanvasElement);
+   amplitudesViewerWidget        = new FunctionCurveViewer.Widget(amplitudesViewerCanvasElement);
+   amplOverFrequencyViewerWidget = new FunctionCurveViewer.Widget(amplOverFrequencyViewerCanvasElement);
+   UtilsB.synchronizeViewers([inputSignalViewerWidget, outputSignalViewerWidget, frequencyViewerWidget, amplitudesViewerWidget]);
+   DomUtils.addClickEventListener("loadAudioFileButton", loadAudioFileButton_click);
+   DomUtils.addClickEventListener("playInputButton", playInputButton_click);
+   DomUtils.addClickEventListener("analyzeButton", analyzeButton_click);
+   DomUtils.addClickEventListener("saveTextFileButton", saveTextFileButton_click);
+   DomUtils.addClickEventListener("loadTextFileButton", loadTextFileButton_click);
+   DomUtils.addClickEventListener("enableAllHarmonicsButton", () => {ParmProc.setHarmonicCheckboxes(true); synParms_change(); });
+   DomUtils.addClickEventListener("disableAllHarmonicsButton", () => {ParmProc.setHarmonicCheckboxes(false); synParms_change(); });
+   DomUtils.addChangeEventListener("synParms", synParms_change);
+   DomUtils.addClickEventListener("synthesizeButton", synthesizeButton_click);
+   DomUtils.addClickEventListener("playOutputButton", playOutputButton_click);
+   DomUtils.addClickEventListener("saveWavFileButton", saveWavFileButton_click);
+   ParmProc.populateWindowFunctionSelectElement("trackingWindowFunctionId");
+   ParmProc.populateWindowFunctionSelectElement("ampWindowFunctionId");
+   await initParms();
+   refreshButtons(); }
 
 async function startup() {
    try {
       await startup2(); }
     catch (e) {
+      console.log(e);
       alert("Error: " + e); }}
 
 document.addEventListener("DOMContentLoaded", <any>startup);

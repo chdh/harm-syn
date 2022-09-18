@@ -1,7 +1,7 @@
 // Harmonic frequency tracking
 
-import {HarmSynRecord} from "../intData/HarmSynDef";
-import * as Utils from "../Utils";
+import {HarmSynRecord} from "../intData/HarmSynIntData.js";
+import * as Utils from "../Utils.js";
 import * as WindowFunctions from "dsp-collection/signal/WindowFunctions";
 import * as AdaptiveStft from "dsp-collection/signal/AdaptiveStft";
 import * as InstFreq from "dsp-collection/signal/InstFreq";
@@ -48,7 +48,7 @@ export interface HarmonicTrackingInfo {                    // harmonic tracking 
 * @return
 *    Tracked F0 values and additional info.
 */
-export function trackHarmonics (samples: Float64Array, trackingInterval: number, trackingPositions: number,
+export function trackHarmonics (samples: Float64Array | Float32Array, trackingInterval: number, trackingPositions: number,
       trackingStartPos: number, f0Start: number, maxFrequencyDerivative: number, minTrackingAmplitude: number, harmonics: number, fCutoff: number,
       shiftFactor: number, trackingRelWindowWidth: number, trackingWindowFunction: WindowFunctions.WindowFunction | undefined) : HarmonicTrackingInfo[] {
    const buf: HarmonicTrackingInfo[] = new Array(trackingPositions);
@@ -110,7 +110,7 @@ export function trackHarmonics (samples: Float64Array, trackingInterval: number,
 * @param windowFunction
 *    Window function for computing the harmonic amplitudes.
 */
-export function genHarmSynRecords (samples: Float64Array, sampleRate: number, trackingInfos: HarmonicTrackingInfo[], trackingInterval: number,
+export function genHarmSynRecords (samples: Float64Array | Float32Array, sampleRate: number, trackingInfos: HarmonicTrackingInfo[], trackingInterval: number,
       interpolationInterval: number, fCutoff: number, relWindowWidth: number, windowFunction: WindowFunctions.WindowFunction | undefined) : HarmSynRecord[] {
    const n = Math.floor(trackingInfos.length / interpolationInterval);
    const buf: HarmSynRecord[] = new Array(n);
@@ -151,7 +151,7 @@ export function genHarmSynRecords (samples: Float64Array, sampleRate: number, tr
 * @returns
 *    Start position for frequency tracking [s].
 */
-export function findTrackingStartPosition (samples: Float64Array, sampleRate: number, trackingStartPosSpec: number | undefined, trackingStartLevel: number,
+export function findTrackingStartPosition (samples: ArrayLike<number>, sampleRate: number, trackingStartPosSpec: number | undefined, trackingStartLevel: number,
       startFrequencySpec: number | undefined, startFrequencyMin: number, trackingRelWindowWidth: number) : number {
    const signalLength = samples.length / sampleRate;                           // [s]
 
@@ -205,5 +205,5 @@ export function findTrackingStartPosition (samples: Float64Array, sampleRate: nu
 * @returns
 *    Frequency in Hz or NaN.
 */
-export function findTrackingStartFrequency (samples: Float64Array, sampleRate: number, probePos: number, startFrequencyMin: number, startFrequencyMax: number) : number {
+export function findTrackingStartFrequency (samples: Float64Array | Float32Array, sampleRate: number, probePos: number, startFrequencyMin: number, startFrequencyMax: number) : number {
    return PitchDetectionHarm.estimatePitch_harmonicSum(samples, sampleRate, probePos, startFrequencyMin, startFrequencyMax); }
