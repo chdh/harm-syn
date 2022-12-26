@@ -147,9 +147,9 @@ function synthesize() {
 //--- Audio file i/o -----------------------------------------------------------
 
 async function loadAudioFileData (fileData: ArrayBuffer, fileName: string) {
-   const audioBuffer = await AudioUtils.decodeAudioFileData(fileData);
-   inputSignalSamples = audioBuffer.getChannelData(0);     // only the first channel is used
-   inputSignalSampleRate = audioBuffer.sampleRate;
+   const audioData = await AudioUtils.decodeAudioFileData(fileData);
+   inputSignalSamples = audioData.channelData[0];          // only the first channel is used
+   inputSignalSampleRate = audioData.sampleRate;
    inputSignalFileName = fileName;
    inputSignalValid = true;
    loadSignalViewer(inputSignalViewerWidget, inputSignalSamples, inputSignalSampleRate);
@@ -167,6 +167,7 @@ async function loadAudioFileFromUrl (url: string) {
    await loadAudioFileData(fileData, fileName); }
 
 function loadAudioFileButton_click() {
+   audioPlayer.stop();
    UtilsB.openFileOpenDialog((file: File) => catchError(loadLocalAudioFile, file)); }
 
 async function saveWavFileButton_click() {
@@ -205,6 +206,7 @@ async function loadTextFileFromUrl (url: string) {
    processTextFileData(fileData, fileName); }
 
 function loadTextFileButton_click() {
+   audioPlayer.stop();
    UtilsB.openFileOpenDialog((file: File) => catchError(loadLocalTextFile, file)); }
 
 function saveTextFileButton_click() {

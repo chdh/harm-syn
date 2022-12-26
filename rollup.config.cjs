@@ -1,9 +1,9 @@
-import nodeResolve from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import sourcemaps from 'rollup-plugin-sourcemaps';
-import builtinModules from 'builtin-modules';
+const nodeResolve = require("@rollup/plugin-node-resolve");
+const commonjs = require("@rollup/plugin-commonjs");
+const sourcemaps = require("rollup-plugin-sourcemaps");
+const builtinModules = require("builtin-modules");
 
-export default [
+module.exports = [
 {
    input: "tempBuild/browserApp/Main.js",
    output: {

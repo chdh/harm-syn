@@ -6,7 +6,7 @@
       "dialog-manager": "^1.0.3",
       "dsp-collection": "^0.2.4",
       "function-curve-viewer": "^1.0.19",
-      "wav-decoder": "^1.3.0",
+      "wav-file-decoder": "^1.0.2",
       "wav-file-encoder": "^1.0.2"
    },
    "devDependencies": {

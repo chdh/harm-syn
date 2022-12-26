@@ -87,7 +87,7 @@ export function renderHarmonicCheckboxes (harmonicCount: number) {
    let html = "<div>";
    for (let harmonic = 1; harmonic <= harmonicCount; harmonic++) {
       let extraClass = "";
-      if (harmonic > 1 && harmonic % 20 == 1) {
+      if (harmonic > 1 && harmonic % 15 == 1) {
          html += "</div><div>"; }
        else if (harmonic > 1 && harmonic % 5 == 1) {
          extraClass = " harmonic-gap"; }

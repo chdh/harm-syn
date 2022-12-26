@@ -41,18 +41,25 @@ code,
 code {
    background-color: #eff0f1; }
 
-input[type="text"], input[type="number"] {
+input[type="text"],
+input[type="number"] {
    padding: 1px 2px; }
 
 input[type="number"]::-webkit-inner-spin-button {
    -webkit-appearance: none; }
 input[type="number"] {
    -moz-appearance: textfield; }
-input[type="text"]:invalid:not(:focus), input[type="number"]:invalid:not(:focus) {
+input[type="text"]:invalid:not(:focus),
+input[type="number"]:invalid:not(:focus) {
    box-shadow: 0 0 1px 1px #f00; }
 
-input[type="text"]:focus, input[type="number"]:focus, select:focus, canvas:focus {
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+.canvasFrame:focus-within {
    outline: 1px auto #4D90FE; }
+.canvasFrame:focus-within {
+   outline-style: solid; }
 
 .hidden {
    display: none !important; }
@@ -121,17 +128,20 @@ div.actionButtons button {
    text-align: center;
    font-size: 17px; }
 
-#inputSignalViewer,
-#outputSignalViewer,
-#frequencyViewer,
-#amplitudesViewer,
-#amplOverFrequencyViewer {
+canvas.functionCurveViewer {
    display: block;
+   width: 100%;
+   height: 100%;
+   touch-action: none; }
+
+div.functionCurveViewerFrame,
+div.functionCurveEditorFrame {
    width: 800px;
    height: 200px;
    margin-top: 8px;
    border: 1px solid #888;
-   touch-action: none; }
+   resize: both;
+   overflow: hidden; }
 
 div.miniButtonsBelow {
    margin-top: 5px;

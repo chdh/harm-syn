@@ -1,4 +1,3 @@
-import {createAudioBufferFromSamples} from "./AudioUtils.js";
 import {nextTick} from "./UtilsB.js";
 
 export default class InternalAudioPlayer extends EventTarget {
@@ -30,7 +29,10 @@ export default class InternalAudioPlayer extends EventTarget {
       this.fireEvent("stateChange"); }
 
    public async playSamples (samples: ArrayLike<number>, sampleRate: number) {
-      const buffer = createAudioBufferFromSamples(samples, sampleRate);
+      const buffer = new AudioBuffer({length: samples.length, sampleRate});
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < samples.length; i++) {
+         data[i] = samples[i]; }
       await this.playAudioBuffer(buffer); }
 
    public isPlaying() : boolean {

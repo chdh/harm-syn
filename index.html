@@ -21,7 +21,9 @@
 
 <h2>Analysis</h2>
 
-<canvas id="inputSignalViewer" tabindex="-1"></canvas>
+<div class="functionCurveViewerFrame canvasFrame">
+ <canvas id="inputSignalViewer" class="functionCurveViewer" tabindex="-1"></canvas>
+</div>
 
 <div class="actionButtons">
  <button id="loadAudioFileButton">Load audio file</button>
@@ -115,19 +117,27 @@
 
 <div class="resultBlock">
  <div class="title">Signal</div>
- <canvas id="outputSignalViewer" tabindex="-1"></canvas>
+ <div class="functionCurveViewerFrame canvasFrame">
+  <canvas id="outputSignalViewer" class="functionCurveViewer" tabindex="-1"></canvas>
+ </div>
 </div>
 <div class="resultBlock">
  <div class="title">Frequency</div>
- <canvas id="frequencyViewer" tabindex="-1"></canvas>
+ <div class="functionCurveViewerFrame canvasFrame">
+  <canvas id="frequencyViewer" class="functionCurveViewer" tabindex="-1"></canvas>
+ </div>
 </div>
 <div class="resultBlock">
  <div class="title">Amplitudes over frequency</div>
- <canvas id="amplOverFrequencyViewer" tabindex="-1"></canvas>
+ <div class="functionCurveViewerFrame canvasFrame">
+  <canvas id="amplOverFrequencyViewer" class="functionCurveViewer" tabindex="-1"></canvas>
+ </div>
 </div>
 <div class="resultBlock">
  <div class="title">Amplitudes over time</div>
- <canvas id="amplitudesViewer" tabindex="-1"></canvas>
+ <div class="functionCurveViewerFrame canvasFrame">
+  <canvas id="amplitudesViewer" class="functionCurveViewer" tabindex="-1"></canvas>
+ </div>
 </div>
 
 <div class="footer">

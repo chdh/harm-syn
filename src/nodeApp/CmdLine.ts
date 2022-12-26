@@ -101,6 +101,7 @@ export function init() {
    // Output file options:
    minRelevantAmplitude                = opts.minRelevantAmplitude;
    // Analysis options:
+   analParms = <HarmAnal.AnalParms>{};
    analParms.startFrequency            = opts.startFrequency;
    analParms.startFrequencyMin         = opts.startFrequencyMin;
    analParms.startFrequencyMax         = opts.startFrequencyMax;
@@ -118,6 +119,7 @@ export function init() {
    analParms.ampRelWindowWidth         = opts.ampRelWindowWidth;
    analParms.ampWindowFunctionId       = opts.ampWindowFunction;
    // Synthesis options:
+   synParms = <HarmSyn.SynParms>{};
    synParms.interpolationMethod        = opts.interpolationMethod;
    synParms.f0Multiplier               = opts.f0Multiplier;
    synParms.harmonicMod                = HarmSyn.decodeHarmonicModString(opts.harmonicMod);

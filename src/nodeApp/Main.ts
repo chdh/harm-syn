@@ -12,7 +12,7 @@ import * as HarmSyn from "../synthesis/HarmSyn.js";
 import * as Utils from "../Utils.js";
 import * as Fs from "fs";
 import * as WavFileEncoder from "wav-file-encoder";
-import * as WavDecoder from "wav-decoder";
+import * as WavFileDecoder from "wav-file-decoder";
 
 var inputSignal:             Float32Array;
 var inputSampleRate:         number;
@@ -22,7 +22,7 @@ var outputSignal:            Float64Array;
 
 function readInputWavFile() {
    const buf = Fs.readFileSync(CmdLine.inputFileName);
-   const audioData = WavDecoder.decode.sync(buf, {symetric: true});
+   const audioData = WavFileDecoder.decodeWavFile(buf);
    if (audioData.channelData.length > 1) {
       console.log("Warning: Only the first auto channel is used."); }
    inputSignal = audioData.channelData[0];
