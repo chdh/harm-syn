@@ -1,6 +1,7 @@
 // Browser DOM utilities.
 
 import {catchError} from "./UtilsB.js";
+import * as DialogManager from "dialog-manager";
 
 const numberFormat = new Intl.NumberFormat("en-US");
 
@@ -141,3 +142,13 @@ export function decodeNumber (s: string) : number | undefined {
       return undefined; }
    const n = Number(s.replace(/[\u{2000}-\u{20FF}]/gu, ""));
    return isFinite(n) ? n : undefined; }
+
+export async function promptNumber (titleText: string, promptText: string, defaultValue: number) : Promise<number|undefined> {
+   const s = await DialogManager.promptInput({titleText, promptText, defaultValue: String(defaultValue)});
+   if (!s) {
+      return; }
+   const n = Number(s);
+   if (!Number.isFinite(n)) {
+      await DialogManager.showMsg({titleText: "Error", msgText: "Invalid number: " + s});
+      return; }
+   return n; }

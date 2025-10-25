@@ -68,19 +68,6 @@ function createConstrainedInterpolator (interpolationMethod: string, xvals: Floa
     else {
       return (x: number) => (x >= xMin && x <= xMax) ? f(x) : outsideValue; }}
 
-/*
-function createInterpolatorWithFallbackForUndef (interpolationMethod: InterpolationMethod, xvals: Float64Array, yvals: Float64Array) : (x: number) => number {
-   const f = createInterpolator(interpolationMethod, xvals, yvals);
-   switch (interpolationMethod) {
-      case "akima": case "cubic": {
-         const f2 = createInterpolator("linear", xvals, yvals);
-         return (x: number) => {
-            const y = f(x);
-            return isFinite(y) ? y : f2(x); }; }
-      default: {
-         return f; }}}
-*/
-
 export function synthesizeFromBase (base: HarmSynBase, sampleRate: number) : Float64Array {
    const sampleCount = Math.round(base.duration * sampleRate);
    const samples = new Float64Array(sampleCount);

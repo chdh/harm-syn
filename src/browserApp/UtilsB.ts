@@ -59,7 +59,7 @@ function openFileOpenDialog_old (callback: (file: File) => void) {
    const element: HTMLInputElement = document.createElement("input");
    element.type = "file";
    element.addEventListener("change", () => {
-      if (element.files && element.files.length == 1) {
+      if (element.files?.length == 1) {
          callback(element.files[0]); }});
    const clickEvent = new MouseEvent("click");
    element.dispatchEvent(clickEvent);

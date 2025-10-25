@@ -17,7 +17,9 @@ H1 {
    font-size: 22px; }
 H2 {
    font-size: 17px;
-   font-weight: bold; }
+   font-weight: bold;
+   margin-top: 15px;
+   margin-bottom: 10px; }
 
 a {
    color: #07C;
@@ -32,8 +34,8 @@ a:hover {
    font-size: 12px; }
 
 div.footer {
-   margin-top: 20px;
-   font-size: 12px; }
+   margin-top: 15px;
+   font-size: 13px; }
 
 code,
 .code {
@@ -143,12 +145,12 @@ div.functionCurveEditorFrame {
    resize: both;
    overflow: hidden; }
 
-div.miniButtonsBelow {
+div.miniButtonsBelowViewer {
    margin-top: 5px;
    display: flex; }
 
-div.miniButtonsBelow div {
-   margin-right: 10px; }
+div.miniButtonsBelowViewer div {
+   margin-right: 15px; }
 
 .helpText {
    background-color: #FEFAE2;

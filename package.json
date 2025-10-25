@@ -1,7 +1,7 @@
 {
    "private": true,
    "dependencies": {
-      "commander": "^9.4.0",
+      "commander": "^14.0.1",
       "commons-math-interpolation": "^2.2.1",
       "dialog-manager": "^1.0.3",
       "dsp-collection": "^0.2.4",
@@ -10,7 +10,7 @@
       "wav-file-encoder": "^1.0.2"
    },
    "devDependencies": {
-      "@types/node": "^18.0.6"
+      "@types/node": "^24.9.1"
    },
    "scripts": {
       "build": "tsc && rollup -c",

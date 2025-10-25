@@ -1,7 +1,6 @@
 const nodeResolve = require("@rollup/plugin-node-resolve");
 const commonjs = require("@rollup/plugin-commonjs");
-const sourcemaps = require("rollup-plugin-sourcemaps");
-const builtinModules = require("builtin-modules");
+const builtinModules = require("builtin-modules").default;
 
 module.exports = [
 {
@@ -18,15 +17,13 @@ module.exports = [
    output: {
       file: "harmsyn.js",
       format: "cjs",
-      banner: "#!/usr/bin/env node",
-      sourcemap: "inline",
+      banner: "#!/usr/bin/env node"
    },
    external: [
       ...builtinModules,
       ],
    plugins: [
       nodeResolve(),
-      commonjs(),
-      sourcemaps()
+      commonjs()
    ]
 }];

@@ -14,11 +14,12 @@ import InternalAudioPlayer from "./InternalAudioPlayer.js";
 import * as ParmProc from "./ParmProc.js";
 import * as FunctionCurveViewer from "function-curve-viewer";
 import * as WavFileEncoder from "wav-file-encoder";
-import * as DialogMgr from "dialog-manager";
+import * as DialogManager from "dialog-manager";
 
 const defaultTextFileUrl = "testSound1.txt";
 
 var audioPlayer:                       InternalAudioPlayer;
+var frequencyCurveStepWidthMs:         number = 10;                  // step width in ms for frequency curve x coordinate points that will be copied to clipboard
 
 // GUI components:
 var inputSignalViewerWidget:           FunctionCurveViewer.Widget;
@@ -44,8 +45,9 @@ var outputSignalValid:                 boolean = false;
 var outputSignalSamples:               Float64Array;
 var outputSignalSampleRate:            number;
 var outputSignalFileName:              string;
+var activeHarmSynBase:                 HarmSynBase;
 
-//------------------------------------------------------------------------------
+//--- Signal viewers -----------------------------------------------------------
 
 function loadSignalViewer (widget: FunctionCurveViewer.Widget, signalSamples: ArrayLike<number>, sampleRate: number) {
    const viewerFunction = FunctionCurveViewer.createViewerFunctionForFloat64Array(signalSamples, sampleRate);
@@ -64,15 +66,16 @@ function loadSignalViewer (widget: FunctionCurveViewer.Widget, signalSamples: Ar
 function loadFrequencyViewer (harmSynBase: HarmSynBase) {
    const viewerFunction = (t: number) => (t >= 0 && t < harmSynBase.duration) ? harmSynBase.f0Function(t) : undefined;
    const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
-      viewerFunction:  viewerFunction,
-      xMin:            0,
-      xMax:            harmSynBase.duration,
+      viewerFunction:   viewerFunction,
+      xMin:             0,
+      xMax:             harmSynBase.duration,
       yMin:            harmSynBase.f0Min / 1.1,
-      yMax:            harmSynBase.f0Max * 1.1,
-      gridEnabled:     true,
-      primaryZoomMode: FunctionCurveViewer.ZoomMode.x,
-      xAxisUnit:       "s",
-      focusShield:     true };
+      yMax:             harmSynBase.f0Max * 1.1,
+      gridEnabled:      true,
+      primaryZoomMode:  FunctionCurveViewer.ZoomMode.x,
+      xAxisUnit:        "s",
+      focusShield:      true,
+      copyEventHandler: frequencyViewer_clipboardCopyEventHandler };
    frequencyViewerWidget.setViewerState(viewerState); }
 
 function loadAmplitudesViewer (harmSynBase: HarmSynBase) {
@@ -126,6 +129,8 @@ function loadAmplOverFrequencyViewer (base: HarmSynBase) {
       focusShield:     true };
    amplOverFrequencyViewerWidget.setViewerState(viewerState); }
 
+//--- Main processing ----------------------------------------------------------
+
 function analyze() {
    const analParms = ParmProc.getUiAnalParms();
    const recs = HarmAnal.analyzeInputFile(inputSignalSamples, inputSignalSampleRate, analParms);
@@ -141,6 +146,7 @@ function synthesize() {
    outputSignalSamples = HarmSynSub.synthesizeFromBase(harmSynBase, synParms.outputSampleRate);
    outputSignalSampleRate = synParms.outputSampleRate;
    outputSignalFileName = intermediateFileName;
+   activeHarmSynBase = harmSynBase;
    outputSignalValid = true;
    loadSignalViewer(outputSignalViewerWidget, outputSignalSamples, outputSignalSampleRate); }
 
@@ -215,6 +221,57 @@ function saveTextFileButton_click() {
    const fileName = Utils.removeFileNameExtension(intermediateFileName) + ".txt";
    UtilsB.openSaveAsDialog(fileData, fileName, "text/plain", "txt", "Text file"); }
 
+//--- Copy to clipboard --------------------------------------------------------
+
+interface Point {x: number; y: number}
+
+function formatCoordinateValue (v: number) {
+   const v2 = Math.round(v * 1E6 + Number.EPSILON) / 1E6;
+   let s = String(v2);
+   if (s.length > 6) {
+      s = v2.toFixed(2); }
+   return s; }
+
+function encodeCoordinateList (points: Point[]) : string {
+   let s: string = "";
+   for (const point of points) {
+      if (s.length > 0) {
+         s += ", "; }
+      s += "[" + formatCoordinateValue(point.x) + ", " + formatCoordinateValue(point.y) + "]"; }
+   return s; }
+
+function getFrequencyCurvePoints (harmSynBase: HarmSynBase, stepWidth: number) : Point[] {
+   const n = Math.floor(harmSynBase.duration / stepWidth);
+   const points: Point[] = [];
+   for (let i = 0; i < n; i++) {
+      const t = i * stepWidth;                             // (here we could add stepWidth/2 but that would produce more relevant digits for the x values)
+      const f = harmSynBase.f0Function(t);
+      if (isFinite(f)) {
+         points.push({x: t, y: f}); }}
+   return points; }
+
+function genFrequencyCurveDataString() {
+   const points = getFrequencyCurvePoints(activeHarmSynBase, frequencyCurveStepWidthMs / 1000);
+   return encodeCoordinateList(points); }
+
+async function copyFrequencyCurveButton_click() {
+   if (!outputSignalValid) {
+      return; }
+   const newStepWidth = await DomUtils.promptNumber("Copy frequency curve coordinates to clipboard", "Step width [ms]", frequencyCurveStepWidthMs);
+   if (!newStepWidth) {
+      return; }
+   frequencyCurveStepWidthMs = newStepWidth;
+   const s = genFrequencyCurveDataString();
+   await navigator.clipboard.writeText(s);
+   DialogManager.showToast({msgText: "Frequency curve copied to clipboard."}); }
+
+function frequencyViewer_clipboardCopyEventHandler (event: ClipboardEvent) {
+   if (!event.clipboardData) {
+      return; }
+   event.preventDefault();
+   const s = genFrequencyCurveDataString();
+   event.clipboardData.setData("text", s); }
+
 //------------------------------------------------------------------------------
 
 function refreshButtons() {
@@ -234,7 +291,7 @@ function synParms_change() {
    refreshButtons(); }
 
 async function showProgressInfo() {
-   DialogMgr.showProgressInfo({msgHtml: `<div class="progressInfoMsg">Processing...</div>`});
+   DialogManager.showProgressInfo({msgHtml: `<div class="progressInfoMsg">Processing...</div>`});
    await waitForDisplayUpdate(); }
 
 async function analyzeButton_click() {
@@ -244,7 +301,7 @@ async function analyzeButton_click() {
       analyze();
       synthesize(); }
     finally {
-      DialogMgr.closeProgressInfo(); }
+      DialogManager.closeProgressInfo(); }
    refreshButtons(); }
 
 async function synthesizeButton_click() {
@@ -253,7 +310,7 @@ async function synthesizeButton_click() {
       await showProgressInfo();
       synthesize(); }
     finally {
-      DialogMgr.closeProgressInfo(); }}
+      DialogManager.closeProgressInfo(); }}
 
 async function playInputButton_click() {
    if (audioPlayer.isPlaying()) {
@@ -276,7 +333,7 @@ async function initWithAudioFile (audioFileUrl: string) {
       analyze();
       synthesize(); }
     finally {
-      DialogMgr.closeProgressInfo(); }
+      DialogManager.closeProgressInfo(); }
    refreshButtons(); }
 
 async function initWithTextFile (textFileUrl: string) {
@@ -285,7 +342,7 @@ async function initWithTextFile (textFileUrl: string) {
       await loadTextFileFromUrl(textFileUrl);
       synthesize(); }
     finally {
-      DialogMgr.closeProgressInfo(); }
+      DialogManager.closeProgressInfo(); }
    refreshButtons(); }
 
 async function initParms() {
@@ -299,6 +356,11 @@ async function initParms() {
       const textFileUrl = up.textFileUrl ?? defaultTextFileUrl2;
       if (textFileUrl) {
          await initWithTextFile(textFileUrl); }}}
+
+function functionCurveViewerHelpButton_click() {
+   const t = document.getElementById("functionCurveViewerHelpText")!;
+   t.innerHTML = inputSignalViewerWidget.getFormattedHelpText();
+   t.classList.toggle("hidden"); }
 
 async function startup2() {
    audioPlayer = new InternalAudioPlayer();
@@ -314,6 +376,7 @@ async function startup2() {
    amplitudesViewerWidget        = new FunctionCurveViewer.Widget(amplitudesViewerCanvasElement);
    amplOverFrequencyViewerWidget = new FunctionCurveViewer.Widget(amplOverFrequencyViewerCanvasElement);
    UtilsB.synchronizeViewers([inputSignalViewerWidget, outputSignalViewerWidget, frequencyViewerWidget, amplitudesViewerWidget]);
+   DomUtils.addClickEventListener("functionCurveViewerHelpButton", functionCurveViewerHelpButton_click);
    DomUtils.addClickEventListener("loadAudioFileButton", loadAudioFileButton_click);
    DomUtils.addClickEventListener("playInputButton", playInputButton_click);
    DomUtils.addClickEventListener("analyzeButton", analyzeButton_click);
@@ -325,6 +388,7 @@ async function startup2() {
    DomUtils.addClickEventListener("synthesizeButton", synthesizeButton_click);
    DomUtils.addClickEventListener("playOutputButton", playOutputButton_click);
    DomUtils.addClickEventListener("saveWavFileButton", saveWavFileButton_click);
+   DomUtils.addClickEventListener("copyFrequencyCurveButton", copyFrequencyCurveButton_click);
    ParmProc.populateWindowFunctionSelectElement("trackingWindowFunctionId");
    ParmProc.populateWindowFunctionSelectElement("ampWindowFunctionId");
    await initParms();
