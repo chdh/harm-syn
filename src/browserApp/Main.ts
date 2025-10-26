@@ -19,7 +19,7 @@ import * as DialogManager from "dialog-manager";
 const defaultTextFileUrl = "testSound1.txt";
 
 var audioPlayer:                       InternalAudioPlayer;
-var frequencyCurveStepWidthMs:         number = 10;                  // step width in ms for frequency curve x coordinate points that will be copied to clipboard
+var frequencyCurveStepWidthMs:         number = 20;                  // step width in ms for frequency curve x coordinate points that will be copied to clipboard
 
 // GUI components:
 var inputSignalViewerWidget:           FunctionCurveViewer.Widget;
@@ -225,19 +225,19 @@ function saveTextFileButton_click() {
 
 interface Point {x: number; y: number}
 
-function formatCoordinateValue (v: number) {
-   const v2 = Math.round(v * 1E6 + Number.EPSILON) / 1E6;
+function formatCoordinateValue (v: number, fracDigits: number) {
+   const v2 = Math.round(v * 1E6) / 1E6;
    let s = String(v2);
-   if (s.length > 6) {
-      s = v2.toFixed(2); }
+   if (s.length > 8) {
+      s = v.toFixed(fracDigits); }
    return s; }
 
-function encodeCoordinateList (points: Point[]) : string {
+function encodeCoordinateList (points: Point[], xFracDigits: number, yFracDigits: number) : string {
    let s: string = "";
    for (const point of points) {
       if (s.length > 0) {
          s += ", "; }
-      s += "[" + formatCoordinateValue(point.x) + ", " + formatCoordinateValue(point.y) + "]"; }
+      s += "[" + formatCoordinateValue(point.x, xFracDigits) + ", " + formatCoordinateValue(point.y, yFracDigits) + "]"; }
    return s; }
 
 function getFrequencyCurvePoints (harmSynBase: HarmSynBase, stepWidth: number) : Point[] {
@@ -252,7 +252,7 @@ function getFrequencyCurvePoints (harmSynBase: HarmSynBase, stepWidth: number) :
 
 function genFrequencyCurveDataString() {
    const points = getFrequencyCurvePoints(activeHarmSynBase, frequencyCurveStepWidthMs / 1000);
-   return encodeCoordinateList(points); }
+   return encodeCoordinateList(points, 3, 2); }
 
 async function copyFrequencyCurveButton_click() {
    if (!outputSignalValid) {
