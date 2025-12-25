@@ -1,6 +1,6 @@
 const nodeResolve = require("@rollup/plugin-node-resolve");
 const commonjs = require("@rollup/plugin-commonjs");
-const builtinModules = require("builtin-modules").default;
+const builtinModules = require("node:module").builtinModules;
 
 module.exports = [
 {

@@ -54,6 +54,7 @@ export function getUiAnalParms() : AnalParms {
 export function setUiSynParms (p: SynParms) {
    DomUtils.setValue   ("interpolationMethod",      p.interpolationMethod);
    DomUtils.setValueNum("f0Multiplier",             p.f0Multiplier);
+   DomUtils.setValueNum("freqShift",                p.freqShift);
    // (harmonicMod not yet implemented)
    DomUtils.setValueNum("outputSampleRate",         p.outputSampleRate); }
 
@@ -61,6 +62,7 @@ export function getUiSynParms() : SynParms {
    const p = <SynParms>{};
    p.interpolationMethod = DomUtils.getValue   ("interpolationMethod");
    p.f0Multiplier        = DomUtils.getValueNum("f0Multiplier");
+   p.freqShift           = DomUtils.getValueNum("freqShift");
    p.harmonicMod         = getHarmonicMod();
    p.outputSampleRate    = DomUtils.getValueNum("outputSampleRate");
    return p; }
@@ -132,6 +134,7 @@ function getUrlSynParms (usp: URLSearchParams) : SynParms {
    const p = <SynParms>{};
    p.interpolationMethod      = usp.get("interpolationMethod")  ?? d.interpolationMethod;
    p.f0Multiplier             = getNum(usp, "f0Multiplier")     ?? d.f0Multiplier;
+   p.freqShift                = getNum(usp, "freqShift")        ?? d.freqShift;
    p.harmonicMod              = /* not yet implemented */          d.harmonicMod;
    p.outputSampleRate         = getNum(usp, "outputSampleRate") ?? d.outputSampleRate;
    return p; }

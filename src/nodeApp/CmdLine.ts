@@ -78,6 +78,7 @@ export function init() {
    // Synthesis options:
    cmd.option("--interpolationMethod <n>", "Interpolation method ID for synthesis.", defaultSynParms.interpolationMethod);
    cmd.option("--f0Multiplier <n>", "F0 multiplier. A multiplicative factor for the fundamental frequency.", decodeNumber, defaultSynParms.f0Multiplier);
+   cmd.option("--freqShift <n>", "frequency shift [Hz]. Frequency shift for synthesizing the harmonics.", decodeNumber, defaultSynParms.freqShift);
    cmd.option("--harmonicMod <s>",
       "Enable/disable or amplify/attenuate individual harmonics.\n" +
       "A '*' can be used to include all multiple harmonics.\n" +

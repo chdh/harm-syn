@@ -109,7 +109,8 @@ function loadAmplOverFrequencyViewer (base: HarmSynBase) {
          ctx.strokeStyle = pctx.curveColors[harmonic - 1] || "#666666";
          ctx.beginPath();
          for (let time = 0; time < base.duration; time += 0.001) {
-            const frequency = base.f0Function(time) * harmonic;      // (possible speed-optimization: Compute F0 once for all harmonics)
+            const f0 = base.f0Function(time);                        // (possible speed-optimization: Compute F0 once for all harmonics)
+            const frequency = f0 * harmonic + base.freqShift;
             const amplitude = amplitudeFunction(time);
             if (!isFinite(amplitude)) {
                ctx.stroke();
@@ -139,7 +140,7 @@ function analyze() {
 function synthesize() {
    outputSignalValid = false;
    const synParms = ParmProc.getUiSynParms();
-   const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.harmonicMod);
+   const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.freqShift, synParms.harmonicMod);
    loadFrequencyViewer(harmSynBase);
    loadAmplitudesViewer(harmSynBase);
    loadAmplOverFrequencyViewer(harmSynBase);

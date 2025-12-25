@@ -10,13 +10,6 @@
 </head>
 <body>
 
-<script>
- try {
-    eval("(async function() {})"); }
-  catch (e) {
-    document.write('<p style="color: red; font-size: 20px; font-weight: bold;">Sorry, your web browser is outdated and cannot run this application!</p>'); }
-</script>
-
 <h1>HarmSyn - Harmonic Synthesizer</h1>
 
 <h2>Analysis</h2>
@@ -36,50 +29,72 @@
 </div>
 
 <div class="parmBlock">
- <div class="parmLine">
+ <div class="parmField">
   <label class="w" for="startFrequency" title="Start value for the fundamental frequency F0. If not specified, pitch detection is used.">Start freq. [Hz]:</label>
   <input class="w" id="startFrequency" type="number" step="any" placeholder="(auto)">
-  <label class="wg" for="startFrequencyMin" title="Minimal value for the automatic start frequency.">Start freq. min. [Hz]:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="startFrequencyMin" title="Minimal value for the automatic start frequency.">Start freq. min. [Hz]:</label>
   <input class="w" id="startFrequencyMin" type="number" step="any" required>
-  <label class="wg" for="startFrequencyMax" title="Maximum value for automatic startFrequency.">Start freq. max. [Hz]:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="startFrequencyMax" title="Maximum value for automatic startFrequency.">Start freq. max. [Hz]:</label>
   <input class="w" id="startFrequencyMax" type="number" step="any" required>
  </div>
- <div class="parmLine">
+ <div class="parmField">
   <label class="w" for="trackingStartPos" title="Start position for frequency tracking. Automatically determined if not specified. Tracking proceeds from this position in both directions.">Tracking st. pos. [s]:</label>
   <input class="w" id="trackingStartPos" type="number" step="any" placeholder="(auto)">
-  <label class="wg" for="trackingStartLevel" title="Minimal signal level for automatically finding the start position for frequency tracking. Only used when trackingStartPos is not specified.">Tracking st. lvl [dB]:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="trackingStartLevel" title="Minimal signal level for automatically finding the start position for frequency tracking. Only used when trackingStartPos is not specified.">Tracking st. lvl [dB]:</label>
   <input class="w" id="trackingStartLevel" type="number" step="any" required>
-  <label class="wg" for="trackingInterval" title="Step size for the tracking algorithm.">Tracking interval [ms]:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="trackingInterval" title="Step size for the tracking algorithm.">Tracking interval [ms]:</label>
   <input class="w" id="trackingInterval" type="number" step="any" required>
  </div>
- <div class="parmLine">
+ <div class="parmField">
   <label class="w" for="maxFrequencyDerivative" title="Maximum relative frequency derivative per second.">Max. freq. deriv. [/s]:</label>
   <input class="w" id="maxFrequencyDerivative" type="number" step="any" required>
-  <label class="wg" for="minTrackingAmplitude" title="Minimum tracking amplitude. Harmonics with a lower amplitude are ignored for frequency tracking.">Min. trk. ampl. [dB]:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="minTrackingAmplitude" title="Minimum tracking amplitude. Harmonics with a lower amplitude are ignored for frequency tracking.">Min. trk. ampl. [dB]:</label>
   <input class="w" id="minTrackingAmplitude" type="number" step="any" required>
  </div>
- <div class="parmLine">
+ <div class="parmField">
   <label class="w" for="harmonics" title="Number of harmonic frequencies to track.">Harmonics:</label>
   <input class="w" id="harmonics" type="number" min="1" required>
-  <label class="wg" for="fCutoff" title="Upper frequency limit for the harmonics.">Cutoff freq. [Hz]:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="fCutoff" title="Upper frequency limit for the harmonics.">Cutoff freq. [Hz]:</label>
   <input class="w" id="fCutoff" type="number" step="any" required>
-  <label class="wg" for="shiftFactor" title="Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.">Shift factor:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="shiftFactor" title="Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.">Shift factor:</label>
   <input class="w" id="shiftFactor" type="number" step="any" required>
  </div>
- <div class="parmLine">
+ <div class="parmField">
   <label class="w" for="trackingRelWindowWidth" title="Window width for frequency tracking, relative to F0 wavelength.">Trk. rel. win. width:</label>
   <input class="w" id="trackingRelWindowWidth" type="number" step="any" required>
-  <label class="wg" for="trackingWindowFunctionId" title="Window function for computing the instantaneous frequencies during tracking.">Trk. window func.:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="trackingWindowFunctionId" title="Window function for computing the instantaneous frequencies during tracking.">Trk. window func.:</label>
   <select class="w" id="trackingWindowFunctionId"></select>
-  <label class="wg" for="interpolationInterval" title="Interpolation interval as a multiple of the tracking interval.">Interpolation int.:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="interpolationInterval" title="Interpolation interval as a multiple of the tracking interval.">Interpolation int.:</label>
   <input class="w" id="interpolationInterval" type="number" step="any" required>
  </div>
- <div class="parmLine">
+ <div class="parmField">
   <label class="w" for="ampRelWindowWidth" title="Window width relative to F0 wavelength for computing the harmonic amplitudes.">Amp. rel. win. width:</label>
   <input class="w" id="ampRelWindowWidth" type="number" step="any" required>
-  <label class="wg" for="ampWindowFunctionId" title="Window function for computing the harmonic amplitudes.">Amp. window func.:</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="ampWindowFunctionId" title="Window function for computing the harmonic amplitudes.">Amp. window func.:</label>
   <select class="w" id="ampWindowFunctionId"></select>
-  <label class="wg" for="minRelevantAmplitude" title="Minimum relevant amplitude. Lower amplitude values are omitted in the text output file.">Min. amplitude [dB]</label>
+ </div>
+ <div class="parmField">
+  <label class="w" for="minRelevantAmplitude" title="Minimum relevant amplitude. Lower amplitude values are omitted in the text output file.">Min. amplitude [dB]</label>
   <input class="w" id="minRelevantAmplitude" type="number" step="any" required value="-70">
  </div>
 </div>
@@ -92,24 +107,38 @@
 <h2>Synthesis</h2>
 
 <div id="synParms">
- <div class="parmLine">
-  <label class="w" for="interpolationMethod">Interpolation:</label>
-  <select class="w" id="interpolationMethod">
-   <option value="akima">Akima</option>
-   <option value="cubic">Cubic</option>
-   <option value="linear">Linear</option>
-   <option value="nearestNeighbor">Nearest neighbor</option>
-  </select>
-  <label class="wg" for="f0Multiplier" title="Multiplicative factor for the fundamental frequency.">F0 multiplier:</label>
-  <input class="w" id="f0Multiplier" type="number" step="any" required>
-  <label class="wg" for="outputSampleRate">Sample rate [Hz]:</label>
-  <input class="w" id="outputSampleRate" type="number" step="any" required>
+ <div class="parmBlock parmBlockContinuationFirst">
+  <div class="parmField">
+   <label class="w" for="interpolationMethod">Interpolation:</label>
+   <select class="w" id="interpolationMethod">
+    <option value="akima">Akima</option>
+    <option value="cubic">Cubic</option>
+    <option value="linear">Linear</option>
+    <option value="nearestNeighbor">Nearest neighbor</option>
+   </select>
+  </div>
+  <div class="parmField">
+   <label class="w" for="f0Multiplier" title="Multiplicative factor for the fundamental frequency.">F0 multiplier:</label>
+   <input class="w" id="f0Multiplier" type="number" step="any" required>
+  </div>
+  <div class="parmField">
+   <label class="w" for="freqShift" title="Frequency shift for synthesizing the harmonics.">Frequency shift [Hz]:</label>
+   <input class="w" id="freqShift" type="number" step="any" required>
+  </div>
+  <div class="parmField">
+   <label class="w" for="outputSampleRate">Sample rate [Hz]:</label>
+   <input class="w" id="outputSampleRate" type="number" step="any" required>
+  </div>
  </div>
- <div class="parmLine">
-  <label class="w" title="The checkboxes can be used to filter individual harmonics.">Harmonics:</label>
-  <div id="harmonicCheckboxes"></div>
-  <div id="enableAllHarmonicsButton" class="pseudoButton">all</div>
-  <div id="disableAllHarmonicsButton" class="pseudoButton">none</div>
+ <div class="parmBlock parmBlockContinuationLast">
+  <div class="parmField">
+   <label class="w" title="The checkboxes can be used to filter individual harmonics.">Harmonics:</label>
+   <div id="harmonicCheckboxes"></div>
+  </div>
+  <div class="parmField">
+   <div id="enableAllHarmonicsButton" class="pseudoButton">all</div>
+   <div id="disableAllHarmonicsButton" class="pseudoButton">none</div>
+  </div>
  </div>
 </div>
 

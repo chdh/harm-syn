@@ -10,6 +10,7 @@ const PI2 = Math.PI * 2;
 export interface HarmSynBase {
    duration:                 number;                       // duration of the signal in seconds
    harmonics:                number;                       // number of harmonics
+   freqShift:                number;                       // final frequency shift for the harmonics [Hz]
    f0Min:                    number;                       // approximate minimum F0 value
    f0Max:                    number;                       // approximate maximum F0 value
    f0Function:               (t: number) => number;        // interpolation function for the fundamental frequency
@@ -17,7 +18,7 @@ export interface HarmSynBase {
 
 // @param harmonicMod
 //    Harmonic modulation values in dB. -Infinity to suppress a harmonic. The values are added to the harmonic amplitudes (in dB).
-export function prepare (harmSynDef: HarmSynDef, interpolationMethod: string, f0Multiplier: number, harmonicMod: ArrayLike<number>) : HarmSynBase {
+export function prepare (harmSynDef: HarmSynDef, interpolationMethod: string, f0Multiplier: number, freqShift: number, harmonicMod: ArrayLike<number>) : HarmSynBase {
    const f0Curve = applyF0Multiplier(harmSynDef.f0Curve, f0Multiplier);
    const amplitudeCurves = applyHarmonicMod(harmSynDef.amplitudeCurves, harmonicMod);
    const base = <HarmSynBase>{};
@@ -25,6 +26,7 @@ export function prepare (harmSynDef: HarmSynDef, interpolationMethod: string, f0
       throw new Error("Empty harmonic synthesizer definition."); }
    base.duration = f0Curve.xVals[f0Curve.xVals.length - 1];          // the last F0 time value is used as the duration
    base.harmonics = amplitudeCurves.length;
+   base.freqShift = freqShift;
    base.f0Min = Math.min(...f0Curve.yVals);
    base.f0Max = Math.max(...f0Curve.yVals);
    base.f0Function = createConstrainedInterpolator(<any>interpolationMethod, f0Curve.xVals, f0Curve.yVals);
@@ -69,27 +71,74 @@ function createConstrainedInterpolator (interpolationMethod: string, xvals: Floa
       return (x: number) => (x >= xMin && x <= xMax) ? f(x) : outsideValue; }}
 
 export function synthesizeFromBase (base: HarmSynBase, sampleRate: number) : Float64Array {
+   if (base.freqShift == 0) {
+      return synthesizeFromBase_harmonic(base, sampleRate); }
+    else {
+      return synthesizeFromBase_withFreqShift(base, sampleRate); }}
+
+// This is the normal harmonic case without a frequency shift.
+function synthesizeFromBase_harmonic (base: HarmSynBase, sampleRate: number) : Float64Array {
    const sampleCount = Math.round(base.duration * sampleRate);
    const samples = new Float64Array(sampleCount);
-   let w = 0;                                              // angle of fundamental wave
+   let w = 0;                                              // angle (phase) of fundamental wave
    for (let position = 0; position < sampleCount; position++) {
       const time = position / sampleRate;
-      const f0 = base.f0Function(time);
+
+      // Calculate amplitude at current position.
       let amplitude = 0;
       for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
-         const amplitudeFunction = base.amplitudeFunctions[harmonic - 1];
-         if (!amplitudeFunction) {
-            continue; }
-         const harmonicAmplitudeDb = amplitudeFunction(time);
-         if (!isFinite(harmonicAmplitudeDb) || harmonicAmplitudeDb < -99) {
-            continue; }
-         const harmonicAmplitude = DspUtils.convertDbToAmplitude(harmonicAmplitudeDb);
-         if (!isFinite(harmonicAmplitude)) {
-            continue; }
-         amplitude += harmonicAmplitude * Math.sin(w * harmonic); }
+         amplitude += synthesizeComponentAmplitude(harmonic, time, w * harmonic, base); }
       samples[position] = amplitude;
-      const deltaW = PI2 * f0 / sampleRate;
-      w += deltaW;
-      if (w >= PI2) {
-         w -= PI2; }}
+
+      // Advance w.
+      const f0 = base.f0Function(time);
+      w = advanceW(w, f0, sampleRate); }
+
    return samples; }
+
+// This is a non-harmonic synthesis with a common frequency shift for all the harmonic components.
+function synthesizeFromBase_withFreqShift (base: HarmSynBase, sampleRate: number) : Float64Array {
+   const sampleCount = Math.round(base.duration * sampleRate);
+   const samples = new Float64Array(sampleCount);
+   const wa = new Float64Array(base.harmonics);            // angles (phases) of wave components or -1
+   for (let position = 0; position < sampleCount; position++) {
+      const time = position / sampleRate;
+
+      // Calculate amplitude at current position.
+      let amplitude = 0;
+      for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
+         amplitude += synthesizeComponentAmplitude(harmonic, time, wa[harmonic - 1], base); }
+      samples[position] = amplitude;
+
+      // Advance w for each component.
+      const f0 = base.f0Function(time);
+      for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
+         const f = f0 * harmonic + base.freqShift;
+         wa[harmonic - 1] = advanceW(wa[harmonic - 1], f, sampleRate); }}
+
+   return samples; }
+
+function synthesizeComponentAmplitude (harmonic: number, time: number, w: number, base: HarmSynBase) : number {
+   if (w <= 0) {                                           // handle special value -1 for mute
+      return 0; }
+   const amplitudeFunction = base.amplitudeFunctions[harmonic - 1];
+   if (!amplitudeFunction) {
+      return 0; }
+   const harmonicAmplitudeDb = amplitudeFunction(time);
+   if (!isFinite(harmonicAmplitudeDb) || harmonicAmplitudeDb < -99) {
+      return 0; }
+   const harmonicAmplitude = DspUtils.convertDbToAmplitude(harmonicAmplitudeDb);
+   if (!isFinite(harmonicAmplitude)) {
+      return 0; }
+   return harmonicAmplitude * Math.sin(w); }
+
+// Advances the angle (phase) of a sine component.
+function advanceW (oldW: number, f: number, sampleRate: number) : number {
+   if (f <= 0) {                                           // frequency can become negative when shifted
+      return -1; }                                         // special value -1 for mute
+   let w = Math.max(oldW, 0);
+   const deltaW = PI2 * f / sampleRate;
+   w += deltaW;
+   if (w >= PI2) {
+      w -= PI2; }
+   return w; }

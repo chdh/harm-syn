@@ -67,14 +67,24 @@ select:focus,
    display: none !important; }
 
 .parmBlock {
-   margin: 15px 0; }
-
-.parmLine {
+   margin-top: 10px;
+   margin-bottom: 15px;
+   max-width: 1280px;
    display: flex;
+   flex-wrap: wrap;
    align-items: baseline;
+   column-gap: 20px;
+   row-gap: 8px; }
+.parmBlockContinuationFirst {
+   margin-bottom: 0px; }
+.parmBlockContinuationLast {
    margin-top: 8px; }
 
-div.parmLine input[type="checkbox"] {
+.parmField {
+   display: flex;
+   align-items: baseline; }
+
+.parmBlock input[type="checkbox"] {
    margin-left: 0; }
 
 #harmonicCheckboxes div {
@@ -96,11 +106,8 @@ input.harmonic {
 #disableAllHarmonicsButton {
    margin-left: 7px; }
 
-label.w,
-label.wg {
+label.w {
    width: 140px; }
-label.wg {
-   margin-left: 20px; }
 input.w,
 select.w {
    width: 100px; }
@@ -138,7 +145,7 @@ canvas.functionCurveViewer {
 
 div.functionCurveViewerFrame,
 div.functionCurveEditorFrame {
-   width: 800px;
+   width: min(1280px, 100%);
    height: 200px;
    margin-top: 8px;
    border: 1px solid #888;

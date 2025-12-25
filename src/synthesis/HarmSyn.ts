@@ -7,12 +7,14 @@ import * as HarmSynSub from "./HarmSynSub.js";
 export interface SynParms {                                // synthesizer parameters
    interpolationMethod:      string;                       // Interpolation method ID for synthesis
    f0Multiplier:             number;                       // F0 multiplier. A multiplicative factor for the fundamental frequency.
+   freqShift:                number;                       // Frequency shift [Hz]. Frequency shift for synthesizing the harmonics.
    harmonicMod:              ArrayLike<number>;            // dB values to amplify/attenuate harmonics
    outputSampleRate:         number; }                     // Output sample rate [Hz]
 
 export const defaultSynParms: SynParms = {                 // default values for synthesizer parameters
    interpolationMethod:      "akima",
    f0Multiplier:             1,
+   freqShift:                0,
    harmonicMod:              new Array(maxHarmonics).fill(0),
    outputSampleRate:         44100 };
 
@@ -74,6 +76,6 @@ export function decodeHarmonicModString (s: string) : Float64Array {
       return decodeNumber(s.substring(p0, p)); }}
 
 export function synthesize (harmSynDef: HarmSynDef, synParms: SynParms) : Float64Array {
-   const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.harmonicMod);
+   const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.freqShift, synParms.harmonicMod);
    const outputSignal = HarmSynSub.synthesizeFromBase(harmSynBase, synParms.outputSampleRate);
    return outputSignal; }
