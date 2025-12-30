@@ -1,6 +1,7 @@
 $$BackupControl.txt
 app.js
 build.bat
+dist
 harmsyn.js
 node_modules
 notes.txt

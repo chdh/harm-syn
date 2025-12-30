@@ -1,10 +1,10 @@
 // Parameter processing routines
 
-import * as DomUtils from "./DomUtils.js";
-import {maxHarmonics} from "../intData/HarmSynIntData.js";
-import {AnalParms, defaultAnalParms} from "../analysis/HarmAnal.js";
-import {SynParms, defaultSynParms} from "../synthesis/HarmSyn.js";
-import * as WindowFunctions from "dsp-collection/signal/WindowFunctions.js";
+import {AnalParms, defaultAnalParms, SynParms, defaultSynParms} from "harm-syn";
+import * as WindowFunctions from "dsp-collection/signal/WindowFunctions";
+import {maxHarmonics} from "harm-syn/intData/HarmSynIntData";
+
+import * as DomUtils from "./DomUtils.ts";
 
 //--- UI parameters ------------------------------------------------------------
 

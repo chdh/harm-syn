@@ -1,11 +1,12 @@
 // HarmSyn Analysis main logic
 
-import {HarmSynRecord} from "../intData/HarmSynIntData.js";
-import * as HarmTrack from "./HarmTrack.js";
-import {debugLevel} from "../Utils.js";
 import * as WindowFunctions from "dsp-collection/signal/WindowFunctions";
 import * as DspUtils from "dsp-collection/utils/DspUtils";
 
+import {HarmSynRecord} from "../intData/HarmSynIntData.ts";
+import * as HarmTrack from "./HarmTrack.ts";
+
+const debugLevel = 0;
 const fallbackStartFrequency = 250;
 
 export interface AnalParms {                               // analysis parameters
@@ -55,7 +56,7 @@ function determineStartFrequency (inputSignal: Float64Array | Float32Array, inpu
    console.log(`Start frequency could not be determined by pitch detection. Using ${fallbackStartFrequency} Hz.`);
    return fallbackStartFrequency; }
 
-export function analyzeInputFile (inputSignal: Float64Array | Float32Array, inputSampleRate: number, analParms: AnalParms) : HarmSynRecord[] {
+export function analyzeHarmonicSignal (inputSignal: Float64Array | Float32Array, inputSampleRate: number, analParms: AnalParms) : HarmSynRecord[] {
    const trackingStartPos1 = HarmTrack.findTrackingStartPosition(inputSignal, inputSampleRate, analParms.trackingStartPos, analParms.trackingStartLevel,
          analParms.startFrequency, analParms.startFrequencyMin, analParms.trackingRelWindowWidth);
    const trackingStartPos = Math.ceil(trackingStartPos1 / analParms.trackingInterval - 1E-3) * analParms.trackingInterval;

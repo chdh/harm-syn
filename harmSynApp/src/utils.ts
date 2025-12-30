@@ -41,6 +41,22 @@ export function synchronizeViewers (widgetGroup: FunctionCurveViewer.Widget[]) {
          state2.xMax = state1.xMax;
          widget2.setViewerState(state2); }}}
 
+export async function loadFileFromUrl (url: string) : Promise<ArrayBuffer> {
+   const response = await fetch(url, {mode: "cors", credentials: "include"}); // (server must send "Access-Control-Allow-Origin" header field or have same origin)
+   if (!response.ok) {
+      throw new Error("Request failed for " + url); }
+   return await response.arrayBuffer(); }
+
+export async function loadTextFileFromUrl (url: string) : Promise<string> {
+   const response = await fetch(url, {mode: "cors"});   // (server must send "Access-Control-Allow-Origin" header field or have same origin)
+   if (!response.ok) {
+      throw new Error("Request failed for " + url); }
+   return await response.text(); }
+
+export function removeFileNameExtension (s: string) : string {
+   const p = s.lastIndexOf(".");
+   return (p > 0) ? s.substring(0, p) : s; }
+
 //------------------------------------------------------------------------------
 
 export function openFileOpenDialog (callback: (file: File) => void) {

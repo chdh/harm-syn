@@ -1,23 +1,21 @@
 // Main module for Node commandline mode.
 
-import * as CmdLine from "./CmdLine.js";
-import {analParms, synParms} from "./CmdLine.js";
-import {SimpleError} from "../Utils.js";
-import {HarmSynRecord, HarmSynDef} from "../intData/HarmSynIntData.js";
-import * as HarmSynIntData from "../intData/HarmSynIntData.js";
-import * as HarmSynFileReader from "../intData/HarmSynFileReaderV1.js";
-import * as HarmSynFileWriter from "../intData/HarmSynFileWriterV1.js";
-import * as HarmAnal from "../analysis/HarmAnal.js";
-import * as HarmSyn from "../synthesis/HarmSyn.js";
-import * as Utils from "../Utils.js";
-import * as Fs from "fs";
+import * as Fs from "node:fs";
 import * as WavFileEncoder from "wav-file-encoder";
 import * as WavFileDecoder from "wav-file-decoder";
+import * as HarmSyn from "harm-syn";
+import * as HarmSynFileReader from "harm-syn/intData/HarmSynFileReaderV1";
+import * as HarmSynFileWriter from "harm-syn/intData/HarmSynFileWriterV1";
+
+import * as CmdLine from "./CmdLine.ts";
+import {analParms, synParms} from "./CmdLine.ts";
+import {SimpleError} from "./Utils.ts";
+import * as Utils from "./Utils.ts";
 
 var inputSignal:             Float32Array;
 var inputSampleRate:         number;
-var harmSynRecs:             HarmSynRecord[];
-var harmSynDef:              HarmSynDef;
+var harmSynRecs:             HarmSyn.HarmSynRecord[];
+var harmSynDef:              HarmSyn.HarmSynDef;
 var outputSignal:            Float64Array;
 
 function readInputWavFile() {
@@ -45,20 +43,20 @@ function readInputFile() {
    switch ((ext ?? "?").toLowerCase()) {
       case "wav": {
          readInputWavFile();
-         harmSynRecs = HarmAnal.analyzeInputFile(inputSignal, inputSampleRate, analParms);
+         harmSynRecs = HarmSyn.analyzeHarmonicSignal(inputSignal, inputSampleRate, analParms);
          break; }
       case "txt": {
          readInputTextFile();
          break; }
       default: {
          throw new SimpleError("Unrecognized input file name extension."); }}
-   harmSynDef = HarmSynIntData.convertRecordsToDef(harmSynRecs); }
+   harmSynDef = HarmSyn.convertRecordsToDef(harmSynRecs); }
 
 function writeOutputFile() {
    const ext = Utils.getFileNameExtension(CmdLine.outputFileName);
    switch ((ext ?? "?").toLowerCase()) {
       case "wav": {
-         outputSignal = HarmSyn.synthesize(harmSynDef, synParms);
+         outputSignal = HarmSyn.synthesizeHarmonicSignal(harmSynDef, synParms);
          writeOutputWavFile();
          break; }
       case "txt": {

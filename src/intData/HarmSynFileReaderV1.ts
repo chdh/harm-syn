@@ -1,8 +1,8 @@
 // Harmonic synthesizer file parser.
-// Version for old file format.
+// Version for V1 file format.
 
-import {HarmSynRecord, maxHarmonics} from "./HarmSynIntData.js";
-import * as Utils from "../Utils";
+import {HarmSynRecord, maxHarmonics} from "./HarmSynIntData.ts";
+import * as Utils from "../Utils.ts";
 
 function parseHarmSynFileLine (s: string) : HarmSynRecord | undefined {
    let p = 0;

@@ -1,8 +1,9 @@
 // Harmonic synthesis subroutines.
 
-import {HarmSynDef, FunctionCurveDef} from "../intData/HarmSynIntData.js";
 import {createInterpolator} from "commons-math-interpolation";
 import * as DspUtils from "dsp-collection/utils/DspUtils";
+
+import {HarmSynDef, FunctionCurveDef} from "../intData/HarmSynIntData.ts";
 
 const PI2 = Math.PI * 2;
 

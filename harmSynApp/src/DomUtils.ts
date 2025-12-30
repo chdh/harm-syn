@@ -1,7 +1,7 @@
 // Browser DOM utilities.
 
-import {catchError} from "./UtilsB.js";
 import * as DialogManager from "dialog-manager";
+import {catchError} from "./Utils.ts";
 
 const numberFormat = new Intl.NumberFormat("en-US");
 

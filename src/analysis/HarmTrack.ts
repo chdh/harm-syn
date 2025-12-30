@@ -1,7 +1,5 @@
 // Harmonic frequency tracking
 
-import {HarmSynRecord} from "../intData/HarmSynIntData.js";
-import * as Utils from "../Utils.js";
 import * as WindowFunctions from "dsp-collection/signal/WindowFunctions";
 import * as AdaptiveStft from "dsp-collection/signal/AdaptiveStft";
 import * as InstFreq from "dsp-collection/signal/InstFreq";
@@ -9,6 +7,9 @@ import * as PitchDetectionHarm from "dsp-collection/signal/PitchDetectionHarm";
 import * as EnvelopeDetection from "dsp-collection/signal/EnvelopeDetection";
 import * as DspUtils from "dsp-collection/utils/DspUtils";
 import * as ArrayUtils from "dsp-collection/utils/ArrayUtils";
+
+import {HarmSynRecord} from "../intData/HarmSynIntData.ts";
+import * as Utils from "../Utils.ts";
 
 export interface HarmonicTrackingInfo {                    // harmonic tracking info for a specific time position
    f0:                       number;                       // fundamental frequency [normalized]

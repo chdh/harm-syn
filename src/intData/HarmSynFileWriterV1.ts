@@ -1,7 +1,7 @@
 // Harmonic synthesizer file generator.
-// Version for old file format.
+// Version for V1 file format.
 
-import {HarmSynRecord} from "./HarmSynIntData.js";
+import {HarmSynRecord} from "./HarmSynIntData.ts";
 
 const eol = "\r\n";
 

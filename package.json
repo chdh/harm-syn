@@ -1,19 +1,52 @@
 {
-   "private": true,
-   "dependencies": {
-      "commander": "^14.0.1",
-      "commons-math-interpolation": "^2.2.1",
-      "dialog-manager": "^1.0.3",
-      "dsp-collection": "^0.2.4",
-      "function-curve-viewer": "^1.0.19",
-      "wav-file-decoder": "^1.0.2",
-      "wav-file-encoder": "^1.0.2"
+   "name": "harm-syn",
+   "version": "1.0.0",
+   "description": "An analysis and synthesis algorithm for quasi-periodic signals, e.g. vowels.",
+   "type": "module",
+   "types": "dist/Index.d.ts",
+   "main": "dist/Index.js",
+   "exports": {
+      ".": {
+         "types": "./dist/Index.d.ts",
+         "default": "./dist/Index.js"
+      },
+      "./*": {
+         "types": "./dist/*.d.ts",
+         "default": "./dist/*.js"
+      }
    },
-   "devDependencies": {
-      "@types/node": "^24.9.1"
+   "keywords": [
+      "harmsyn",
+      "harmonic-analysis",
+      "harmonic-synthesis",
+      "sound-analysis",
+      "sound-synthesis",
+      "sound",
+      "frequency-tracking",
+      "instantaneous-frequency"
+   ],
+   "license": "MIT",
+   "homepage": "http://www.source-code.biz/harmSyn",
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/chdh/harm-syn.git"
    },
+   "contributors": [
+      {
+         "name": "Christian d'Heureuse",
+         "email": "chdh@inventec.ch",
+         "url": "http://www.source-code.biz"
+      }
+   ],
    "scripts": {
-      "build": "tsc && rollup -c",
-      "lint": "eslint --ext .ts src/**"
-   }
+      "build": "tsc",
+      "lint": "eslint src/**"
+   },
+   "dependencies": {
+      "commons-math-interpolation": "^2.2.4",
+      "dsp-collection": "^0.2.8"
+   },
+   "files": [
+      "dist/"
+   ]
 }

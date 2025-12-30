@@ -1,20 +1,19 @@
-import * as HarmSynIntData from "../intData/HarmSynIntData.js";
-import {HarmSynRecord, HarmSynDef} from "../intData/HarmSynIntData.js";
-import * as HarmSynFileReader from "../intData/HarmSynFileReaderV1.js";
-import * as HarmSynFileWriter from "../intData/HarmSynFileWriterV1";
-import * as HarmSynSub from "../synthesis/HarmSynSub.js";
-import {HarmSynBase} from "../synthesis/HarmSynSub.js";
-import * as HarmAnal from "../analysis/HarmAnal.js";
-import * as Utils from "../Utils.js";
-import * as UtilsB from "./UtilsB.js";
-import {catchError, waitForDisplayUpdate} from "./UtilsB.js";
-import * as DomUtils from "./DomUtils.js";
-import * as AudioUtils from "./AudioUtils.js";
-import InternalAudioPlayer from "./InternalAudioPlayer.js";
-import * as ParmProc from "./ParmProc.js";
 import * as FunctionCurveViewer from "function-curve-viewer";
 import * as WavFileEncoder from "wav-file-encoder";
 import * as DialogManager from "dialog-manager";
+import * as HarmSyn from "harm-syn";
+import {HarmSynRecord, HarmSynDef} from "harm-syn";
+import * as HarmSynSub from "harm-syn/synthesis/HarmSynSub";
+import {HarmSynBase} from "harm-syn/synthesis/HarmSynSub";
+import * as HarmSynFileReader from "harm-syn/intData/HarmSynFileReaderV1";
+import * as HarmSynFileWriter from "harm-syn/intData/HarmSynFileWriterV1";
+
+import * as Utils from "./Utils.ts";
+import {catchError, waitForDisplayUpdate} from "./Utils.ts";
+import * as DomUtils from "./DomUtils.ts";
+import * as AudioUtils from "./AudioUtils.ts";
+import InternalAudioPlayer from "./InternalAudioPlayer.ts";
+import * as ParmProc from "./ParmProc.ts";
 
 const defaultTextFileUrl = "testSound1.txt";
 
@@ -134,7 +133,7 @@ function loadAmplOverFrequencyViewer (base: HarmSynBase) {
 
 function analyze() {
    const analParms = ParmProc.getUiAnalParms();
-   const recs = HarmAnal.analyzeInputFile(inputSignalSamples, inputSignalSampleRate, analParms);
+   const recs = HarmSyn.analyzeHarmonicSignal(inputSignalSamples, inputSignalSampleRate, analParms);
    setHarmSynRecs(recs, inputSignalFileName); }
 
 function synthesize() {
@@ -175,7 +174,7 @@ async function loadAudioFileFromUrl (url: string) {
 
 function loadAudioFileButton_click() {
    audioPlayer.stop();
-   UtilsB.openFileOpenDialog((file: File) => catchError(loadLocalAudioFile, file)); }
+   Utils.openFileOpenDialog((file: File) => catchError(loadLocalAudioFile, file)); }
 
 async function saveWavFileButton_click() {
    audioPlayer.stop();
@@ -183,13 +182,13 @@ async function saveWavFileButton_click() {
       await synthesizeButton_click(); }
    const wavFileData = WavFileEncoder.encodeWavFile2([outputSignalSamples], outputSignalSampleRate, WavFileEncoder.WavFileType.float32);
    const fileName = Utils.removeFileNameExtension(outputSignalFileName) + ".wav";
-   UtilsB.openSaveAsDialog(wavFileData, fileName, "audio/wav", "wav", "WAV audio file"); }
+   Utils.openSaveAsDialog(wavFileData, fileName, "audio/wav", "wav", "WAV audio file"); }
 
 //--- Text file i/o ------------------------------------------------------------
 
 function setHarmSynRecs (recs: HarmSynRecord[], fileName: string) {
    harmSynRecs = recs;
-   harmSynDef = HarmSynIntData.convertRecordsToDef(recs);
+   harmSynDef = HarmSyn.convertRecordsToDef(recs);
    harmSynDefValid = true;
    // DomUtils.setValue("inputFileName", fileName);
    intermediateFileName = fileName;
@@ -214,13 +213,13 @@ async function loadTextFileFromUrl (url: string) {
 
 function loadTextFileButton_click() {
    audioPlayer.stop();
-   UtilsB.openFileOpenDialog((file: File) => catchError(loadLocalTextFile, file)); }
+   Utils.openFileOpenDialog((file: File) => catchError(loadLocalTextFile, file)); }
 
 function saveTextFileButton_click() {
    const minRelevantAmplitude = DomUtils.getValueNum("minRelevantAmplitude");
    const fileData = HarmSynFileWriter.createHarmSynFile(harmSynRecs, minRelevantAmplitude);
    const fileName = Utils.removeFileNameExtension(intermediateFileName) + ".txt";
-   UtilsB.openSaveAsDialog(fileData, fileName, "text/plain", "txt", "Text file"); }
+   Utils.openSaveAsDialog(fileData, fileName, "text/plain", "txt", "Text file"); }
 
 //--- Copy to clipboard --------------------------------------------------------
 
@@ -376,7 +375,7 @@ async function startup2() {
    frequencyViewerWidget         = new FunctionCurveViewer.Widget(frequencyViewerCanvasElement);
    amplitudesViewerWidget        = new FunctionCurveViewer.Widget(amplitudesViewerCanvasElement);
    amplOverFrequencyViewerWidget = new FunctionCurveViewer.Widget(amplOverFrequencyViewerCanvasElement);
-   UtilsB.synchronizeViewers([inputSignalViewerWidget, outputSignalViewerWidget, frequencyViewerWidget, amplitudesViewerWidget]);
+   Utils.synchronizeViewers([inputSignalViewerWidget, outputSignalViewerWidget, frequencyViewerWidget, amplitudesViewerWidget]);
    DomUtils.addClickEventListener("functionCurveViewerHelpButton", functionCurveViewerHelpButton_click);
    DomUtils.addClickEventListener("loadAudioFileButton", loadAudioFileButton_click);
    DomUtils.addClickEventListener("playInputButton", playInputButton_click);

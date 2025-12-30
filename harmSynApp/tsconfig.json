@@ -2,9 +2,8 @@
    "compilerOptions": {
       "allowUnreachableCode": false,
       "alwaysStrict": true,
-      "declaration": true,
       "forceConsistentCasingInFileNames": true,
-      "lib": ["ES2020"],
+      "lib": ["ES2020", "DOM", "DOM.Iterable"],
       "module": "node18",
       "noFallthroughCasesInSwitch": true,
       "noImplicitAny": true,
@@ -13,10 +12,9 @@
       "noImplicitThis": true,
       "noUnusedLocals": true,
       "noUnusedParameters": true,
-      "outDir": "dist",
+      "outDir": "tempBuild",
       "removeComments": true,
       "rewriteRelativeImportExtensions": true,
-      "sourceMap": true,
       "strictFunctionTypes": true,
       "strictNullChecks": true,
       "target": "ES2020"

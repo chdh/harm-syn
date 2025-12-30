@@ -1,12 +1,11 @@
 // Commandline parameters
 
-import {decodeNumber, decodeInt} from "../Utils.js";
-import * as Utils from "../Utils.js";
-import * as HarmAnal from "../analysis/HarmAnal.js";
-import {defaultAnalParms} from "../analysis/HarmAnal.js";
-import * as HarmSyn from "../synthesis/HarmSyn.js";
-import {defaultSynParms} from "../synthesis/HarmSyn.js";
 import * as Commander from "commander";
+
+import * as HarmSyn from "harm-syn";
+import {defaultAnalParms, defaultSynParms} from "harm-syn";
+
+import {decodeNumber, decodeInt} from "./Utils.ts";
 
 // Input file parameters:
 export var inputFileName:              string;
@@ -16,7 +15,7 @@ export var outputFileName:             string;
 export var minRelevantAmplitude:       number;             // [dB]
 
 // Analysis parameters:
-export var analParms:                  HarmAnal.AnalParms;
+export var analParms:                  HarmSyn.AnalParms;
 
 // Synthesis parameters:
 export var synParms:                   HarmSyn.SynParms;
@@ -89,7 +88,6 @@ export function init() {
       "Attenuate 3th harmonic by 5dB: \"1* 3/-5\"");
    cmd.option("--sampleRate <n>", "Output sample rate [Hz].", decodeNumber, defaultSynParms.outputSampleRate);
    // General options:
-   cmd.option("-d, --debugLevel <n>", "Debug level (0 to 9)", decodeNumber, 0);
    cmd.option("-h, --help", "Displays this help.");
    cmd.helpOption(false);
    //
@@ -102,7 +100,7 @@ export function init() {
    // Output file options:
    minRelevantAmplitude                = opts.minRelevantAmplitude;
    // Analysis options:
-   analParms = <HarmAnal.AnalParms>{};
+   analParms = <HarmSyn.AnalParms>{};
    analParms.startFrequency            = opts.startFrequency;
    analParms.startFrequencyMin         = opts.startFrequencyMin;
    analParms.startFrequencyMax         = opts.startFrequencyMax;
@@ -123,7 +121,6 @@ export function init() {
    synParms = <HarmSyn.SynParms>{};
    synParms.interpolationMethod        = opts.interpolationMethod;
    synParms.f0Multiplier               = opts.f0Multiplier;
+   synParms.freqShift                  = opts.freqShift;
    synParms.harmonicMod                = HarmSyn.decodeHarmonicModString(opts.harmonicMod);
-   synParms.outputSampleRate           = opts.sampleRate;
-   // General options:
-   Utils.setDebugLevel(opts.debugLevel); }
+   synParms.outputSampleRate           = opts.sampleRate; }

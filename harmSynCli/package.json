@@ -1,0 +1,17 @@
+{
+   "private": true,
+   "type": "module",
+   "dependencies": {
+      "harm-syn": "file:..",
+      "commander": "^14.0.1",
+      "wav-file-decoder": "^1.0.2",
+      "wav-file-encoder": "^1.0.2"
+   },
+   "devDependencies": {
+      "@types/node": "^24.9.1"
+   },
+   "scripts": {
+      "build": "tsc && rollup -c",
+      "lint": "eslint src/**"
+   }
+}

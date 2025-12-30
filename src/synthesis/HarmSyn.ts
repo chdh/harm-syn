@@ -1,8 +1,8 @@
 // Harmonic synthesis main logic.
 
-import {maxHarmonics, HarmSynDef} from "../intData/HarmSynIntData.js";
-import {decodeNumber, SimpleError} from "../Utils.js";
-import * as HarmSynSub from "./HarmSynSub.js";
+import {maxHarmonics, HarmSynDef} from "../intData/HarmSynIntData.ts";
+import {decodeNumber} from "../Utils.ts";
+import * as HarmSynSub from "./HarmSynSub.ts";
 
 export interface SynParms {                                // synthesizer parameters
    interpolationMethod:      string;                       // Interpolation method ID for synthesis
@@ -38,7 +38,7 @@ export function decodeHarmonicModString (s: string) : Float64Array {
          break; }
       const harmonic = scanNumber();
       if (!Number.isInteger(harmonic) || harmonic < 1 || harmonic > maxHarmonics) {
-         throw new SimpleError("Invalid harmonic number " + harmonic + "."); }
+         throw new Error("Invalid harmonic number " + harmonic + "."); }
       skipBlanks();
       let multi = false;
       if (s[p] == "*") {
@@ -75,7 +75,7 @@ export function decodeHarmonicModString (s: string) : Float64Array {
          p++; }
       return decodeNumber(s.substring(p0, p)); }}
 
-export function synthesize (harmSynDef: HarmSynDef, synParms: SynParms) : Float64Array {
+export function synthesizeHarmonicSignal (harmSynDef: HarmSynDef, synParms: SynParms) : Float64Array {
    const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.freqShift, synParms.harmonicMod);
    const outputSignal = HarmSynSub.synthesizeFromBase(harmSynBase, synParms.outputSampleRate);
    return outputSignal; }
