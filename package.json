@@ -1,6 +1,6 @@
 {
    "name": "harm-syn",
-   "version": "1.0.0",
+   "version": "1.0.1",
    "description": "An analysis and synthesis algorithm for quasi-periodic signals, e.g. vowels.",
    "type": "module",
    "types": "dist/Index.d.ts",

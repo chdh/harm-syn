@@ -68,7 +68,7 @@ function loadFrequencyViewer (harmSynBase: HarmSynBase) {
       viewerFunction:   viewerFunction,
       xMin:             0,
       xMax:             harmSynBase.duration,
-      yMin:            harmSynBase.f0Min / 1.1,
+      yMin:             harmSynBase.f0Min / 1.1,
       yMax:             harmSynBase.f0Max * 1.1,
       gridEnabled:      true,
       primaryZoomMode:  FunctionCurveViewer.ZoomMode.x,

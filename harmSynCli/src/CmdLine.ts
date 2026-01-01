@@ -71,7 +71,7 @@ export function init() {
    cmd.option("--shiftFactor <n>", "Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.", decodeNumber, defaultAnalParms.shiftFactor);
    cmd.option("--trackingRelWindowWidth <n>", "Window width for frequency tracking, relative to F0 wavelength.", decodeNumber, defaultAnalParms.trackingRelWindowWidth);
    cmd.option("--trackingWindowFunction <s>", "Window function for computing the instantaneous frequencies during tracking.", defaultAnalParms.trackingWindowFunctionId);
-   cmd.option("--interpolationInterval <n>", "Interpolation interval as a multiple of the tracking interval.", decodeInt, defaultAnalParms.interpolationInterval);
+   cmd.option("--interpolationInterval <n>", "Interpolation interval as an integer multiple of the tracking interval.", decodeInt, defaultAnalParms.interpolationInterval);
    cmd.option("--ampRelWindowWidth <n>", "Window width relative to F0 wavelength for computing the harmonic amplitudes.", decodeNumber, defaultAnalParms.ampRelWindowWidth);
    cmd.option("--ampWindowFunction <s>", "Window function for computing the harmonic amplitudes.", defaultAnalParms.ampWindowFunctionId);
    // Synthesis options:

@@ -113,6 +113,8 @@ export function trackHarmonics (samples: Float64Array | Float32Array, trackingIn
 */
 export function genHarmSynRecords (samples: Float64Array | Float32Array, sampleRate: number, trackingInfos: HarmonicTrackingInfo[], trackingInterval: number,
       interpolationInterval: number, fCutoff: number, relWindowWidth: number, windowFunction: WindowFunctions.WindowFunction | undefined) : HarmSynRecord[] {
+   if (!Number.isSafeInteger(interpolationInterval)) {
+      throw new Error("interpolationInterval is not an integer."); }
    const n = Math.floor(trackingInfos.length / interpolationInterval);
    const buf: HarmSynRecord[] = new Array(n);
    let bufP = 0;
