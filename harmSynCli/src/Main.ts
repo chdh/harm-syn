@@ -31,7 +31,7 @@ function readInputTextFile() {
    harmSynRecs = HarmSynFileReader.parseHarmSynFile(fileData); }
 
 function writeOutputWavFile() {
-   const wavFileData = WavFileEncoder.encodeWavFile2([outputSignal], synParms.outputSampleRate, WavFileEncoder.WavFileType.float32);
+   const wavFileData = WavFileEncoder.encodeWavFileFromArrays([outputSignal], synParms.outputSampleRate, WavFileEncoder.WavFileType.float32);
    Fs.writeFileSync(CmdLine.outputFileName, Buffer.from(wavFileData)); }
 
 function writeOutputTextFile() {

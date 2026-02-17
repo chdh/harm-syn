@@ -391,6 +391,7 @@ async function startup2() {
    DomUtils.addClickEventListener("copyFrequencyCurveButton", copyFrequencyCurveButton_click);
    ParmProc.populateWindowFunctionSelectElement("trackingWindowFunctionId");
    ParmProc.populateWindowFunctionSelectElement("ampWindowFunctionId");
+   DomUtils.prepareFieldInfo();
    await initParms();
    refreshButtons(); }
 

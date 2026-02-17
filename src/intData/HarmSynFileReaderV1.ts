@@ -68,6 +68,7 @@ export function parseHarmSynFile (fileData: string) : HarmSynRecord[] {
       try {
          r = parseHarmSynFileLine(fileLines[lineNo - 1]); }
        catch (e) {
+//       throw new Error("Error while parsing line " + lineNo + ": " + e, {cause: e}); }
          throw new Error("Error while parsing line " + lineNo + ": " + e); }
       if (r) {
          harmSynDef.push(r); }}

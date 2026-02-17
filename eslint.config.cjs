@@ -56,6 +56,7 @@ const rules = {
    "no-constant-condition": ["error", {checkLoops: false }],
    "no-var": "off",
    "require-atomic-updates": "off",
+   "preserve-caught-error": "off", // temporary solution, unti TypeScript supports option.cause
 
    // Additional plugin rules:
    "@typescript-eslint/explicit-member-accessibility": "error",
