@@ -22,6 +22,7 @@ export interface AnalParmsPass1 {                          // analysis parameter
    minTrackingAmplitude:     number;                       // [dB] Minimum tracking amplitude. Harmonics with a lower amplitude are ignored for frequency tracking.
    harmonics:                number;                       //      Number of harmonic frequencies to track.
    fCutoff:                  number;                       // [Hz] Upper frequency limit for the harmonics.
+   fCutoffSmoothingWidth:    number;                       // [Hz] Smoothing width for the cutoff. Distance between the start of the smoothing and the -6dB point at `fCutoff`. And between the -6dB point and 0.
    shiftFactor:              number;                       //      Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.
    trackingRelWindowWidth:   number;                       //      Window width for frequency tracking, relative to F0 wavelength.
    trackingWindowFunctionId: string; }                     //      Window function for computing the instantaneous frequencies during tracking.
@@ -44,6 +45,7 @@ export const defaultAnalParmsPass1: AnalParmsPass1 = {     // default values for
    minTrackingAmplitude:     -55,
    harmonics:                10,
    fCutoff:                  5500,
+   fCutoffSmoothingWidth:    100,
    shiftFactor:              0.25,
    trackingRelWindowWidth:   12,
    trackingWindowFunctionId: "flatTop" };
@@ -96,7 +98,7 @@ export function analyzeHarmonicSignal_pass2 (inputSignal: Float64Array | Float32
    const trackingIntervalInSamples = analParms.trackingInterval * inputSampleRate;
       // `analParms.trackingInterval` is a pass 1 parameter.
    const recs = HarmTrack.genHarmSynRecords(inputSignal, inputSampleRate, trackingInfos, trackingIntervalInSamples, analParms.interpolationInterval,
-         analParms.fCutoff / inputSampleRate, analParms.ampRelWindowWidth, ampWindowFunction);
+         analParms.fCutoff / inputSampleRate, analParms.fCutoffSmoothingWidth / inputSampleRate, analParms.ampRelWindowWidth, ampWindowFunction);
    return recs; }
 
 /**

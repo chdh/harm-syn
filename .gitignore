@@ -5,6 +5,7 @@ dist
 harmsyn.js
 node_modules
 notes.txt
+old
 package-lock.json
 tempBuild
 test*.bat

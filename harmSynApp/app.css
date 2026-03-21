@@ -133,6 +133,8 @@ select.w {
    background-image: url('data:image/svg+xml,<svg version="1.1" viewBox="2 2 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M10 9.25 a.75.75 0 0 1 .75.75 v3.333 a.75.75 0 0 1-1.5 0 V10 a.75.75 0 0 1 .75-.75 M10 5.833 a.959.959 0 1 1-.001 1.917 A.959.959 0 0 1 10 5.833" fill="%2346f"/><path d="m10 2.085a7.915 7.915 0 1 1 0 15.83 7.915 7.915 0 0 1 0-15.83m0 1.33a6.585 6.585 0 1 0 0 13.17 6.585 6.585 0 0 0 0-13.17" clip-rule="evenodd" fill="%2346f" fill-rule="evenodd"/></svg>'); }
 #harmonicCheckboxesLabel > .fieldInfoButton {
    right: 5px; }
+.miniControlsBelowViewer .fieldInfoButton {
+   top: -4px; }
 
 .fieldInfoText {
    position: absolute;
@@ -144,6 +146,8 @@ select.w {
    border-radius: 10px;
    background-color: #FFFFDD;
    padding: 10px 12px; }
+.miniControlsBelowViewer .fieldInfoText {
+   top: 25px; }
 
 div.actionButtons {
    margin: 15px 0;
@@ -182,12 +186,22 @@ div.functionCurveEditorFrame {
    resize: both;
    overflow: hidden; }
 
-div.miniButtonsBelowViewer {
+.miniControlsBelowViewer {
    margin-top: 5px;
-   display: flex; }
-
-div.miniButtonsBelowViewer div {
-   margin-right: 15px; }
+   display: flex;
+   align-items: baseline;
+   column-gap: 25px;
+   font-size: 12px; }
+.miniControlsField {
+   position: relative;
+   display: flex;
+   align-items: baseline; }
+.miniControlsField input[type="checkbox"] {
+   align-self: center;
+   margin-left: 0;
+   margin-right: 0; }
+.miniControlsField label {
+   padding-right: 8px; }
 
 .helpText {
    background-color: #FEFAE2;

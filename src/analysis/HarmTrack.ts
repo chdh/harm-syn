@@ -106,13 +106,15 @@ export function trackHarmonics (samples: Float64Array | Float32Array, trackingIn
 *    Interpolation interval as a multiple of the tracking interval.
 * @param fCutoff
 *    Upper frequency limit for the harmonics [normalized].
+* @param fCutoffSmoothingWidth
+*    Smoothing width for the cutoff. Distance between the start of the smoothing and the -6dB point at `fCutoff`. And between the -6dB point and 0. [normalized]
 * @param relWindowWidth
 *    Window width relative to F0 wavelength for computing the harmonic amplitudes.
 * @param windowFunction
 *    Window function for computing the harmonic amplitudes.
 */
 export function genHarmSynRecords (samples: Float64Array | Float32Array, sampleRate: number, trackingInfos: HarmonicTrackingInfo[], trackingInterval: number,
-      interpolationInterval: number, fCutoff: number, relWindowWidth: number, windowFunction: WindowFunctions.WindowFunction | undefined) : HarmSynRecord[] {
+      interpolationInterval: number, fCutoff: number, fCutoffSmoothingWidth: number, relWindowWidth: number, windowFunction: WindowFunctions.WindowFunction | undefined) : HarmSynRecord[] {
    if (!Number.isSafeInteger(interpolationInterval)) {
       throw new Error("interpolationInterval is not an integer."); }
    const n = Math.floor(trackingInfos.length / interpolationInterval);
@@ -124,13 +126,33 @@ export function genHarmSynRecords (samples: Float64Array | Float32Array, sampleR
       if (!isFinite(tInfo.f0) || !tInfo.overallAmplitude) {
          continue; }
       const f0 = tInfo.f0;                                 // only f0 is used from the trackingInfos array
-      const harmonics = Math.floor(fCutoff / f0);
+      const harmonics = Math.floor((fCutoff + fCutoffSmoothingWidth) / f0);
       const amplitudes = AdaptiveStft.getHarmonicAmplitudes(samples, position, f0, harmonics, relWindowWidth, windowFunction);
       if (!amplitudes) {
          continue; }
+      applyFCutoffSmoothing(amplitudes, f0, fCutoff, fCutoffSmoothingWidth);
       buf[bufP++] = {time: position / sampleRate, f0: f0 * sampleRate, amplitudes: Utils.convertAmplitudesToDb(amplitudes)}; }
    buf.length = bufP;
    return buf; }
+
+// A symetric Hann-like function is used for the smoothing.
+function smoothingFunction (x: number) : number {
+   if (x < -1) {
+      return 0; }
+   if (x > 1) {
+      return 1; }
+   return (Math.sin(x * Math.PI / 2) + 1) / 2; }
+
+// LP-Filters the harmonic amplitudes with `fCutoff`.
+// Reduces the amplitudes of the harmonics between `fCutoff - fCutoffSmoothingWidth` and `fCutoff + fCutoffSmoothingWidth`.
+function applyFCutoffSmoothing (amplitudes: Float64Array, f0: number, fCutoff: number, fCutoffSmoothingWidth: number) {
+   if (fCutoffSmoothingWidth <= 0) {
+      return; }
+   const harmonics = amplitudes.length;
+   const firstAffectedHarmonic = Math.ceil((fCutoff - fCutoffSmoothingWidth) / f0);
+   for (let harmonic = firstAffectedHarmonic; harmonic <= harmonics; harmonic++) {
+      const f = f0 * harmonic;
+      amplitudes[harmonic - 1] *= smoothingFunction((fCutoff - f) / fCutoffSmoothingWidth); }}
 
 /**
 * Determines the start position for frequency tracking.

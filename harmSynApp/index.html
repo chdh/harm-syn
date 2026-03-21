@@ -69,6 +69,10 @@
   <label class="w" for="fCutoff">Cutoff freq. [Hz]:</label>
   <input class="w" id="fCutoff" type="number" step="any" required>
  </div>
+ <div class="parmField" data-info="Smoothing width for the cutoff. Distance between the start of the smoothing and the -6dB point at `fCutoff`. And between the -6dB point and 0.">
+  <label class="w" for="fCutoffSmoothingWidth">Cutoff smooth. [Hz]:</label>
+  <input class="w" id="fCutoffSmoothingWidth" type="number" step="any" min="0" required>
+ </div>
  <div class="parmField" data-info="Shift factor, relative to the wavelength of the frequency. Used for measuring the phase delta.">
   <label class="w" for="shiftFactor">Shift factor:</label>
   <input class="w" id="shiftFactor" type="number" step="any" required>
@@ -159,7 +163,7 @@
  <div class="functionCurveViewerFrame canvasFrame">
   <canvas id="frequencyViewer" class="functionCurveViewer" tabindex="-1"></canvas>
  </div>
- <div class="miniButtonsBelowViewer">
+ <div class="miniControlsBelowViewer">
   <div id="copyFrequencyCurveButton" class="miniPseudoButton">Copy curve</div>
  </div>
 </div>
@@ -169,12 +173,24 @@
  <div class="functionCurveViewerFrame canvasFrame">
   <canvas id="amplOverFrequencyViewer" class="functionCurveViewer" tabindex="-1"></canvas>
  </div>
+ <div class="miniControlsBelowViewer">
+  <div class="miniControlsField" data-info="Normalize amplitudes of harmonics relative to overall amplitude.">
+   <label for="normalizeAmplOverFrequency">Normalize:</label>
+   <input id="normalizeAmplOverFrequency" type="checkbox">
+  </div>
+ </div>
 </div>
 
 <div class="resultBlock">
  <div class="title">Amplitudes over time</div>
  <div class="functionCurveViewerFrame canvasFrame">
   <canvas id="amplitudesViewer" class="functionCurveViewer" tabindex="-1"></canvas>
+ </div>
+ <div class="miniControlsBelowViewer">
+  <div class="miniControlsField" data-info="Normalize amplitudes of harmonics relative to overall amplitude.">
+   <label for="normalizeAmplitudesOverTime">Normalize:</label>
+   <input id="normalizeAmplitudesOverTime" type="checkbox">
+  </div>
  </div>
 </div>
 

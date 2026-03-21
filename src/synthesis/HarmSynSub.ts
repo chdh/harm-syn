@@ -4,6 +4,7 @@ import {createInterpolator} from "commons-math-interpolation";
 import * as DspUtils from "dsp-collection/utils/DspUtils";
 
 import {HarmSynDef, FunctionCurveDef} from "../intData/HarmSynIntData.ts";
+import {UniFunction} from "../Utils.ts";
 
 const PI2 = Math.PI * 2;
 
@@ -14,8 +15,11 @@ export interface HarmSynBase {
    freqShift:                number;                       // final frequency shift for the harmonics [Hz]
    f0Min:                    number;                       // approximate minimum F0 value
    f0Max:                    number;                       // approximate maximum F0 value
-   f0Function:               (t: number) => number;        // interpolation function for the fundamental frequency
-   amplitudeFunctions:       ((t: number) => number)[]; }  // interpolation functions for the harmonic amplitudes (in dB)
+   f0Function:               UniFunction;                  // interpolation function for the fundamental frequency [s] -> [Hz]
+   amplitudeFunctions:       UniFunction[];                // interpolation functions for the harmonic amplitudes [s] -> [dB]
+   overallAmplitudeFunction?: UniFunction; }               // interpolation functions for the overall amplitude [s] -> [dB]
+      // The overall amplitude curve is not needed for synthesis. It is only used to be displayed and for computing
+      // the relative amplitudes of the harmonics.
 
 // @param harmonicMod
 //    Harmonic modulation values in dB. -Infinity to suppress a harmonic. The values are added to the harmonic amplitudes (in dB).
@@ -30,12 +34,14 @@ export function prepare (harmSynDef: HarmSynDef, interpolationMethod: string, f0
    base.freqShift = freqShift;
    base.f0Min = Math.min(...f0Curve.yVals);
    base.f0Max = Math.max(...f0Curve.yVals);
-   base.f0Function = createConstrainedInterpolator(<any>interpolationMethod, f0Curve.xVals, f0Curve.yVals);
+   base.f0Function = createConstrainedInterpolator(interpolationMethod, f0Curve);
    base.amplitudeFunctions = new Array(base.harmonics);
    for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
       const ampCurve = amplitudeCurves[harmonic - 1];
       if (ampCurve?.xVals.length) {
-         base.amplitudeFunctions[harmonic - 1] = createConstrainedInterpolator(<any>interpolationMethod, ampCurve.xVals, ampCurve.yVals, -Infinity); }}
+         base.amplitudeFunctions[harmonic - 1] = createConstrainedInterpolator(interpolationMethod, ampCurve, -Infinity); }}
+   if (harmSynDef.overallAmplitudeCurve) {
+      base.overallAmplitudeFunction = createConstrainedInterpolator(interpolationMethod, harmSynDef.overallAmplitudeCurve, -Infinity); }
    return base; }
 
 function applyF0Multiplier (f0Curve0: FunctionCurveDef, f0Multiplier: number) : FunctionCurveDef {
@@ -62,10 +68,11 @@ function findMaxEnabledHarmonic (harmonicMod: ArrayLike<number>) : number {
          maxEnabledHarmonic = i + 1; }}
    return maxEnabledHarmonic; }
 
-function createConstrainedInterpolator (interpolationMethod: string, xvals: Float64Array, yvals: Float64Array, outsideValue?: number) : (x: number) => number {
-   const f = createInterpolator(<any>interpolationMethod, xvals, yvals);
-   const xMin = xvals[0];
-   const xMax = xvals[xvals.length - 1];
+function createConstrainedInterpolator (interpolationMethod: string, curve: FunctionCurveDef, outsideValue?: number) : UniFunction {
+   const {xVals, yVals} = curve;
+   const f = createInterpolator(<any>interpolationMethod, xVals, yVals);
+   const xMin = xVals[0];
+   const xMax = xVals[xVals.length - 1];
    if (outsideValue === undefined) {
       return (x: number) => f(Math.max(xMin, Math.min(xMax, x))); }
     else {
@@ -126,7 +133,7 @@ function synthesizeComponentAmplitude (harmonic: number, time: number, w: number
    if (!amplitudeFunction) {
       return 0; }
    const harmonicAmplitudeDb = amplitudeFunction(time);
-   if (!isFinite(harmonicAmplitudeDb) || harmonicAmplitudeDb < -99) {
+   if (!isFinite(harmonicAmplitudeDb) || harmonicAmplitudeDb <= -99) {
       return 0; }
    const harmonicAmplitude = DspUtils.convertDbToAmplitude(harmonicAmplitudeDb);
    if (!isFinite(harmonicAmplitude)) {

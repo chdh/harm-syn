@@ -24,6 +24,7 @@ export function setUiAnalParms (p: AnalParms) {
    DomUtils.setValueNum("minTrackingAmplitude",     p.minTrackingAmplitude);
    DomUtils.setValueNum("harmonics",                p.harmonics);
    DomUtils.setValueNum("fCutoff",                  p.fCutoff);
+   DomUtils.setValueNum("fCutoffSmoothingWidth",    p.fCutoffSmoothingWidth);
    DomUtils.setValueNum("shiftFactor",              p.shiftFactor);
    DomUtils.setValueNum("trackingRelWindowWidth",   p.trackingRelWindowWidth);
    DomUtils.setValue   ("trackingWindowFunctionId", p.trackingWindowFunctionId);
@@ -43,6 +44,7 @@ export function getUiAnalParms() : AnalParms {
    p.minTrackingAmplitude     = DomUtils.getValueNum   ("minTrackingAmplitude");
    p.harmonics                = DomUtils.getValueNum   ("harmonics");
    p.fCutoff                  = DomUtils.getValueNum   ("fCutoff");
+   p.fCutoffSmoothingWidth    = DomUtils.getValueNum   ("fCutoffSmoothingWidth");
    p.shiftFactor              = DomUtils.getValueNum   ("shiftFactor");
    p.trackingRelWindowWidth   = DomUtils.getValueNum   ("trackingRelWindowWidth");
    p.trackingWindowFunctionId = DomUtils.getValue      ("trackingWindowFunctionId");
@@ -121,6 +123,7 @@ function getUrlAnalParms (usp: URLSearchParams) : AnalParms {
    p.minTrackingAmplitude     = getNum(usp, "minTrackingAmplitude")   ?? d.minTrackingAmplitude;
    p.harmonics                = getNum(usp, "harmonics")              ?? d.harmonics;
    p.fCutoff                  = getNum(usp, "fCutoff")                ?? d.fCutoff;
+   p.fCutoffSmoothingWidth    = getNum(usp, "fCutoffSmoothingWidth")  ?? d.fCutoffSmoothingWidth;
    p.shiftFactor              = getNum(usp, "shiftFactor")            ?? d.shiftFactor;
    p.trackingRelWindowWidth   = getNum(usp, "trackingRelWindowWidth") ?? d.trackingRelWindowWidth;
    p.trackingWindowFunctionId = usp.get("trackingWindowFunctionId")   ?? d.trackingWindowFunctionId;

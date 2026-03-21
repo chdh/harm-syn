@@ -1,5 +1,7 @@
 import * as DspUtils from "dsp-collection/utils/DspUtils";
 
+export type UniFunction = (x: number) => number;
+
 export function splitTextFileIntoLines (fileData: string) : string[] {
    return fileData.split(/\r?\n/); }
 

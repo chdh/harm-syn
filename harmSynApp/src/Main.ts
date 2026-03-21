@@ -77,15 +77,69 @@ function loadFrequencyViewer (harmSynBase: HarmSynBase) {
       copyEventHandler: frequencyViewer_clipboardCopyEventHandler };
    frequencyViewerWidget.setViewerState(viewerState); }
 
+function loadAmplOverFrequencyViewer (harmSynBase: HarmSynBase) {
+   const normalize = DomUtils.getChecked("normalizeAmplOverFrequency");
+   const paintFunction = (pctx: FunctionCurveViewer.CustomPaintContext) => {
+      const ctx = pctx.ctx;
+      ctx.save();
+      for (let harmonic = 1; harmonic <= harmSynBase.harmonics; harmonic++) {
+         const amplitudeFunction = harmSynBase.amplitudeFunctions[harmonic - 1];
+         if (!amplitudeFunction) {
+            continue; }
+         ctx.strokeStyle = getHarmonicColor(harmonic);
+         ctx.beginPath();
+         for (let time = 0; time < harmSynBase.duration; time += 0.001) {
+            const f0 = harmSynBase.f0Function(time);                           // (possible speed-optimization: Compute F0 once for all harmonics)
+            const frequency = f0 * harmonic + harmSynBase.freqShift;
+            let amplitude = amplitudeFunction(time);
+            if (normalize) {
+               const overallAmplitude = harmSynBase.overallAmplitudeFunction!(time);
+               if (amplitude > -70 && overallAmplitude > -30) {
+                  amplitude -= overallAmplitude; }
+                else {
+                  amplitude = NaN; }}
+            if (!isFinite(amplitude)) {
+               ctx.stroke();
+               ctx.beginPath();
+               continue; }
+            ctx.lineTo(pctx.mapLogicalToCanvasXCoordinate(frequency), pctx.mapLogicalToCanvasYCoordinate(amplitude)); }
+         ctx.stroke(); }
+      ctx.restore(); };
+   const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
+      xMin:            0,
+      xMax:            Math.min(5500, harmSynBase.f0Max * harmSynBase.harmonics * 1.1),
+      yMin:            -70,
+      yMax:            0,
+      xAxisUnit:       "Hz",
+      yAxisUnit:       "dB",
+      customPaintFunction: paintFunction,
+      focusShield:     true };
+   amplOverFrequencyViewerWidget.setViewerState(viewerState); }
+
 function loadAmplitudesViewer (harmSynBase: HarmSynBase) {
+   const normalize = DomUtils.getChecked("normalizeAmplitudesOverTime");
+   const harmonics = harmSynBase.harmonics;
+   const canvas = <HTMLCanvasElement>document.getElementById("amplitudesViewer")!;
+   const overallAmplitudeChannel = harmonics;
+   const overallAmplitudeFunction = harmSynBase.overallAmplitudeFunction!;
+   for (let harmonic = 1; harmonic <= harmonics; harmonic++) {
+      const channel = harmonic - 1;
+      canvas.style.setProperty("--curve-color" + channel, getHarmonicColor(harmonic)); }
+   canvas.style.setProperty("--curve-color" + overallAmplitudeChannel, "#888");          // color for the overall amplitude curve
+   //
    const viewerFunction = (time: number, _sampleWidth: number, channel: number) => {
+      if (channel == overallAmplitudeChannel) {
+         return overallAmplitudeFunction(time); }
       const amplitudeFunction = harmSynBase.amplitudeFunctions[channel];
       if (!amplitudeFunction) {
          return NaN; }
-      return amplitudeFunction(time); };
+      let v = amplitudeFunction(time);
+      if (normalize) {
+         v -= overallAmplitudeFunction(time); }
+      return v; };
    const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
       viewerFunction:  viewerFunction,
-      channels:        harmSynBase.harmonics,
+      channels:        harmonics + (normalize ? 0 : 1),
       xMin:            0,
       xMax:            harmSynBase.duration,
       yMin:            -70,
@@ -97,37 +151,20 @@ function loadAmplitudesViewer (harmSynBase: HarmSynBase) {
       focusShield:     true };
    amplitudesViewerWidget.setViewerState(viewerState); }
 
-function loadAmplOverFrequencyViewer (base: HarmSynBase) {
-   const paintFunction = (pctx: FunctionCurveViewer.CustomPaintContext) => {
-      const ctx = pctx.ctx;
-      ctx.save();
-      for (let harmonic = 1; harmonic <= base.harmonics; harmonic++) {
-         const amplitudeFunction = base.amplitudeFunctions[harmonic - 1];
-         if (!amplitudeFunction) {
-            continue; }
-         ctx.strokeStyle = pctx.curveColors[harmonic - 1] || "#666666";
-         ctx.beginPath();
-         for (let time = 0; time < base.duration; time += 0.001) {
-            const f0 = base.f0Function(time);                        // (possible speed-optimization: Compute F0 once for all harmonics)
-            const frequency = f0 * harmonic + base.freqShift;
-            const amplitude = amplitudeFunction(time);
-            if (!isFinite(amplitude)) {
-               ctx.stroke();
-               ctx.beginPath();
-               continue; }
-            ctx.lineTo(pctx.mapLogicalToCanvasXCoordinate(frequency), pctx.mapLogicalToCanvasYCoordinate(amplitude)); }
-         ctx.stroke(); }
-      ctx.restore(); };
-   const viewerState: Partial<FunctionCurveViewer.ViewerState> = {
-      xMin:            0,
-      xMax:            Math.min(5500, base.f0Max * base.harmonics * 1.1),
-      yMin:            -70,
-      yMax:            0,
-      xAxisUnit:       "Hz",
-      yAxisUnit:       "dB",
-      customPaintFunction: paintFunction,
-      focusShield:     true };
-   amplOverFrequencyViewerWidget.setViewerState(viewerState); }
+function refreshAmplOverFrequencyViewer() {
+   if (!outputSignalValid) {
+      return; }
+   loadAmplOverFrequencyViewer(activeHarmSynBase); }
+
+function refreshAmplitudesViewer() {
+   if (!outputSignalValid) {
+      return; }
+   loadAmplitudesViewer(activeHarmSynBase); }
+
+function getHarmonicColor (harmonic: number) : string {
+   const hueStart = 120;
+   const hue = Math.round(hueStart + (harmonic - 1) * 360 / 6.4) % 360;
+   return "hsl(" + hue + ",57%,53%)"; }
 
 //--- Main processing ----------------------------------------------------------
 
@@ -141,8 +178,8 @@ function synthesize() {
    const synParms = ParmProc.getUiSynParms();
    const harmSynBase = HarmSynSub.prepare(harmSynDef, synParms.interpolationMethod, synParms.f0Multiplier, synParms.freqShift, synParms.harmonicMod);
    loadFrequencyViewer(harmSynBase);
-   loadAmplitudesViewer(harmSynBase);
    loadAmplOverFrequencyViewer(harmSynBase);
+   loadAmplitudesViewer(harmSynBase);
    outputSignalSamples = HarmSynSub.synthesizeFromBase(harmSynBase, synParms.outputSampleRate);
    outputSignalSampleRate = synParms.outputSampleRate;
    outputSignalFileName = intermediateFileName;
@@ -389,6 +426,8 @@ async function startup2() {
    DomUtils.addClickEventListener("playOutputButton", playOutputButton_click);
    DomUtils.addClickEventListener("saveWavFileButton", saveWavFileButton_click);
    DomUtils.addClickEventListener("copyFrequencyCurveButton", copyFrequencyCurveButton_click);
+   DomUtils.addChangeEventListener("normalizeAmplOverFrequency", refreshAmplOverFrequencyViewer);
+   DomUtils.addChangeEventListener("normalizeAmplitudesOverTime", refreshAmplitudesViewer);
    ParmProc.populateWindowFunctionSelectElement("trackingWindowFunctionId");
    ParmProc.populateWindowFunctionSelectElement("ampWindowFunctionId");
    DomUtils.prepareFieldInfo();
