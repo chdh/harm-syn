@@ -25,7 +25,9 @@ async function catchErrorAsync (f: Function, ...args: any[]) {
          await r; }}
     catch (error) {
       console.log(error);
-      alert("Error: " + error); }}
+      const s1 = String(error);
+      const s2 = s1.startsWith("Error") ? s1 : "Error: " + s1;
+      alert(s2); }}
 
 // Synchronizes the X axis viewport between a group of function curve viewers.
 export function synchronizeViewers (widgetGroup: FunctionCurveViewer.Widget[]) {

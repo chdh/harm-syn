@@ -165,6 +165,10 @@
  </div>
  <div class="miniControlsBelowViewer">
   <div id="copyFrequencyCurveButton" class="miniPseudoButton">Copy curve</div>
+  <div class="miniControlsField" data-info="Step width in ms for frequency curve x coordinate points that will be copied to the clipboard." style="margin-left: -10px">
+   <label for="copyFrequencyCurveStepWidth">Step width [ms]:</label>
+   <input class="w2" id="copyFrequencyCurveStepWidth" type="number" step="any" value="20" required>
+  </div>
  </div>
 </div>
 
@@ -190,6 +194,15 @@
   <div class="miniControlsField" data-info="Normalize amplitudes of harmonics relative to overall amplitude.">
    <label for="normalizeAmplitudesOverTime">Normalize:</label>
    <input id="normalizeAmplitudesOverTime" type="checkbox">
+  </div>
+  <div id="copyAmplitudeCurveButton" class="miniPseudoButton" style="margin-left: 20px">Copy curve</div>
+  <div class="miniControlsField" data-info="Number of the harmonic to copy or 0 to copy the curve of the overall amplitude." style="margin-left: -10px">
+   <label for="copyAmplitudeCurveHarmonic">Harmonic:</label>
+   <input class="w2" id="copyAmplitudeCurveHarmonic" type="number" value="0" required>
+  </div>
+  <div class="miniControlsField" data-info="Step width in ms for amplitude curve x coordinate points that will be copied to the clipboard.">
+   <label for="copyAmplitudeCurveStepWidth">Step width [ms]:</label>
+   <input class="w2" id="copyAmplitudeCurveStepWidth" type="number" step="any" value="20" required>
   </div>
  </div>
 </div>

@@ -7,6 +7,7 @@ import * as HarmSynSub from "harm-syn/synthesis/HarmSynSub";
 import {HarmSynBase} from "harm-syn/synthesis/HarmSynSub";
 import * as HarmSynFileReader from "harm-syn/intData/HarmSynFileReaderV1";
 import * as HarmSynFileWriter from "harm-syn/intData/HarmSynFileWriterV1";
+import {UniFunction} from "harm-syn/Utils";
 
 import * as Utils from "./Utils.ts";
 import {catchError, waitForDisplayUpdate} from "./Utils.ts";
@@ -18,7 +19,6 @@ import * as ParmProc from "./ParmProc.ts";
 const defaultTextFileUrl = "testSound1.txt";
 
 var audioPlayer:                       InternalAudioPlayer;
-var frequencyCurveStepWidthMs:         number = 20;                  // step width in ms for frequency curve x coordinate points that will be copied to clipboard
 
 // GUI components:
 var inputSignalViewerWidget:           FunctionCurveViewer.Widget;
@@ -281,33 +281,62 @@ function getFrequencyCurvePoints (harmSynBase: HarmSynBase, stepWidth: number) :
    const n = Math.floor(harmSynBase.duration / stepWidth);
    const points: Point[] = [];
    for (let i = 0; i < n; i++) {
-      const t = i * stepWidth;                             // (here we could add stepWidth/2 but that would produce more relevant digits for the x values)
+      const t = i * stepWidth;                                                 // (here we could add stepWidth/2 but that would produce more relevant digits for the x values)
       const f = harmSynBase.f0Function(t);
       if (isFinite(f)) {
          points.push({x: t, y: f}); }}
    return points; }
 
 function genFrequencyCurveDataString() {
-   const points = getFrequencyCurvePoints(activeHarmSynBase, frequencyCurveStepWidthMs / 1000);
+   const stepWidthMs = DomUtils.getValueNum("copyFrequencyCurveStepWidth");
+   const points = getFrequencyCurvePoints(activeHarmSynBase, stepWidthMs / 1000);
    return encodeCoordinateList(points, 3, 2); }
 
 async function copyFrequencyCurveButton_click() {
    if (!outputSignalValid) {
-      return; }
-   const newStepWidth = await DomUtils.promptNumber("Copy frequency curve coordinates to clipboard", "Step width [ms]", frequencyCurveStepWidthMs);
-   if (!newStepWidth) {
-      return; }
-   frequencyCurveStepWidthMs = newStepWidth;
+      throw new Error("No data."); }
    const s = genFrequencyCurveDataString();
    await navigator.clipboard.writeText(s);
    DialogManager.showToast({msgText: "Frequency curve copied to clipboard."}); }
 
 function frequencyViewer_clipboardCopyEventHandler (event: ClipboardEvent) {
    if (!event.clipboardData) {
-      return; }
+      throw new Error("No data."); }
    event.preventDefault();
    const s = genFrequencyCurveDataString();
    event.clipboardData.setData("text", s); }
+
+function getAmplitudeCurvePoints (harmSynBase: HarmSynBase, harmonic: number, stepWidth: number) : Point[] {
+   const n = Math.floor(harmSynBase.duration / stepWidth);
+   const points: Point[] = [];
+   let amplFunction: UniFunction;
+   if (harmonic == 0) {                                                        // 0 = overall amplitude curve
+      amplFunction = harmSynBase.overallAmplitudeFunction!; }
+    else {
+      const af = harmSynBase.amplitudeFunctions[harmonic - 1];
+      if (!af) {
+         throw new Error(`No data for harmonic ${harmonic}.`); }
+      const normalize = DomUtils.getChecked("normalizeAmplitudesOverTime");
+      if (normalize) {
+         amplFunction = (t: number) => af(t) - harmSynBase.overallAmplitudeFunction!(t); }
+       else {
+         amplFunction = af; }}
+   for (let i = 0; i < n; i++) {
+      const t = i * stepWidth;                                                 // (here we could add stepWidth/2 but that would produce more relevant digits for the x values)
+      const a = amplFunction(t);
+      if (isFinite(a)) {
+         points.push({x: t, y: a}); }}
+   return points; }
+
+async function copyAmplitudeCurveButton_click() {
+   if (!outputSignalValid) {
+      throw new Error("No data."); }
+   const harmonic = DomUtils.getValueNum("copyAmplitudeCurveHarmonic");
+   const stepWidthMs = DomUtils.getValueNum("copyAmplitudeCurveStepWidth");
+   const points = getAmplitudeCurvePoints(activeHarmSynBase, harmonic, stepWidthMs / 1000);
+   const s = encodeCoordinateList(points, 3, 2);
+   await navigator.clipboard.writeText(s);
+   DialogManager.showToast({msgText: "Amplitude curve copied to clipboard."}); }
 
 //------------------------------------------------------------------------------
 
@@ -426,6 +455,7 @@ async function startup2() {
    DomUtils.addClickEventListener("playOutputButton", playOutputButton_click);
    DomUtils.addClickEventListener("saveWavFileButton", saveWavFileButton_click);
    DomUtils.addClickEventListener("copyFrequencyCurveButton", copyFrequencyCurveButton_click);
+   DomUtils.addClickEventListener("copyAmplitudeCurveButton", copyAmplitudeCurveButton_click);
    DomUtils.addChangeEventListener("normalizeAmplOverFrequency", refreshAmplOverFrequencyViewer);
    DomUtils.addChangeEventListener("normalizeAmplitudesOverTime", refreshAmplitudesViewer);
    ParmProc.populateWindowFunctionSelectElement("trackingWindowFunctionId");
