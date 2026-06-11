@@ -100,7 +100,7 @@ async function openSaveAsDialog_new (data: ArrayBuffer | string, fileName: strin
    let fileHandle: FileSystemFileHandle;
    try {
       fileHandle = await (<any>window).showSaveFilePicker(pickerOpts); }
-    catch (e) {
+    catch (e: any) {
       if (e.name == "AbortError") {
          return; }
       throw e; }

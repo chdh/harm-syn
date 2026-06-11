@@ -44,7 +44,7 @@
    },
    "dependencies": {
       "commons-math-interpolation": "^2.2.4",
-      "dsp-collection": "^0.2.8"
+      "dsp-collection": "^1.0.0"
    },
    "files": [
       "dist/"
