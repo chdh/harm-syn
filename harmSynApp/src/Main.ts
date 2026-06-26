@@ -270,11 +270,13 @@ function formatCoordinateValue (v: number, fracDigits: number) {
    return s; }
 
 function encodeCoordinateList (points: Point[], xFracDigits: number, yFracDigits: number) : string {
-   let s: string = "";
-   for (const point of points) {
-      if (s.length > 0) {
+   let s = "[";
+   for (let i = 0; i < points.length; i++) {
+      const point = points[i];
+      if (i > 0) {
          s += ", "; }
       s += "[" + formatCoordinateValue(point.x, xFracDigits) + ", " + formatCoordinateValue(point.y, yFracDigits) + "]"; }
+   s += "]";
    return s; }
 
 function getFrequencyCurvePoints (harmSynBase: HarmSynBase, stepWidth: number) : Point[] {
